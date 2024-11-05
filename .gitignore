@@ -1,3 +1,4 @@
 data/soil_data.csv
 data/hydrology_data.csv
 data/elevation_data.csv
+.flake8
