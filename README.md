@@ -1,2 +1,1 @@
-# AFFAMS
-Advanced Field Flood and Moisture Monitoring System
+# Waterlogging Risk Assessor
