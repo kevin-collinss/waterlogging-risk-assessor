@@ -1,12 +1,12 @@
 import geopandas as gpd
-from shapely.geometry import Point#
+from shapely.geometry import Point
 
+# Load soil data
 soil_data = gpd.read_file("C:/Github/02_College/FYP/SOIL_SISNationalSoils_shp/Data/SOIL_SISNationalSoils.shp")
-
 soil_quality = gpd.read_file("C:/Github/02_College/FYP/NationalSoilsHydrologyMap/NationalSoilsHydrologyMap.shp")
 
 # Define the coordinates you want to query
-longitude, latitude = 159270, 195374  
+longitude, latitude = 159270, 195374
 point = Point(longitude, latitude)
 
 # Create a GeoDataFrame for the point
