@@ -4,9 +4,8 @@ import pandas as pd
 grid_data_path = 'data/rainfall_data.csv'
 rainfall_df = pd.read_csv(grid_data_path)
 
+
 def find_grid_for_coordinate(easting, northing):
-
-
     # Round the coordinates to the nearest kilometer
     rounded_easting = round(easting, -3)
     rounded_northing = round(northing, -3)
