@@ -5,14 +5,14 @@ grid_data_path = 'data/rainfall_data.csv'
 rainfall_df = pd.read_csv(grid_data_path)
 
 def find_grid_for_coordinate(easting, northing):
-    
+
     # Round the coordinates to the nearest kilometer
     rounded_easting = round(easting, -3)
     rounded_northing = round(northing, -3)
 
     # Find the row in the DataFrame with the matching grid coordinates
     matching_row = rainfall_df[(rainfall_df['east'] == rounded_easting) & (rainfall_df['north'] == rounded_northing)]
-    
+
     if not matching_row.empty:
         return matching_row.to_dict(orient='records')[0]
     else:
