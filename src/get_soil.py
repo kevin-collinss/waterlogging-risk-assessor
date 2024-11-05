@@ -3,7 +3,7 @@ import geopandas as gpd
 from shapely.geometry import Point, shape
 
 # Load the CSV file
-csv_path = 'C:/Github/02_College/FYP/AFFAMMS/data/soil_data.csv'
+csv_path = 'data/soil_data.csv'
 df = pd.read_csv(csv_path)
 
 # Example coordinates to check
