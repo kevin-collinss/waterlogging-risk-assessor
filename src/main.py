@@ -1,5 +1,5 @@
 import geopandas as gpd
-from shapely.geometry import Point
+from shapely.geometry import Point#
 
 soil_data = gpd.read_file("C:/Github/02_College/FYP/SOIL_SISNationalSoils_shp/Data/SOIL_SISNationalSoils.shp")
 
