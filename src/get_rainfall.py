@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load the GridData CSV file
-grid_data_path = 'data/rainfall_data.csv'  # Update with the actual path
+grid_data_path = 'data/rainfall_data.csv'
 rainfall_df = pd.read_csv(grid_data_path)
 
 def find_grid_for_coordinate(easting, northing):
@@ -19,7 +19,7 @@ def find_grid_for_coordinate(easting, northing):
         return None
 
 easting = 221653
-northing = 240885 
+northing = 240885
 grid_info = find_grid_for_coordinate(easting, northing)
 
 if grid_info:
