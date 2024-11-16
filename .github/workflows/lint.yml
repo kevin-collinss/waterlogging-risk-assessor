@@ -4,6 +4,8 @@ name: Lint
 on:
   push:
     branches: [ "main", "feature/*" ]
+    paths:
+      - '**/*.py'
   pull_request:
     branches: [ "main", "feature/*" ]
 
