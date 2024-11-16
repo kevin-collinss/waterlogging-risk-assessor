@@ -1,0 +1,103 @@
+/* General Styling */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+  }
+  
+  .map-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  /* Header Styling */
+  .map-header {
+    background-color: #343a40;
+    color: #ffffff;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .map-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
+  
+  .map-header p {
+    margin: 5px 0 0;
+    font-size: 1rem;
+  }
+  
+  /* Map and Sidebar Layout */
+  .map-content {
+    display: flex;
+    flex: 1;
+    position: relative;
+  }
+  
+  #map {
+    flex-grow: 1;
+    height: 100%;
+  }
+  
+  /* Sidebar Styling */
+  .sidebar {
+    position: absolute;
+    right: -300px;
+    top: 0;
+    height: 100%;
+    width: 300px;
+    background-color: #ffffff;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease-in-out;
+    z-index: 10;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  
+  .sidebar.open {
+    right: 0;
+  }
+  
+  .sidebar-content {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  
+  .sidebar-content h4 {
+    margin: 0 0 10px;
+    font-size: 1.2rem;
+    color: #333;
+  }
+  
+  .sidebar-content p {
+    margin: 5px 0;
+    font-size: 0.85rem;
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+  }
+  
+  .close-button:hover {
+    color: #000;
+  }
+  
+  /* Footer Styling */
+  .map-footer {
+    background-color: #343a40;
+    color: #ffffff;
+    padding: 10px;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+  
