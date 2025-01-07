@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import proj4 from "proj4";
 import "./Map.css";
 
-mapboxgl.accessToken = "";
+mapboxgl.accessToken = "pk.eyJ1Ijoia2V2aW5jb2wiLCJhIjoiY20zazJ2dTF2MDhqNDJzcGVwdm1rbnlkYyJ9.cVBc9ZK9hR92V6o3vDWz5g";
 
 // Define projections
 const WGS84 = "EPSG:4326"; // WGS84 (Longitude, Latitude)
@@ -16,20 +16,60 @@ proj4.defs(
 );
 
 const Map = () => {
-  const [sidebarData, setSidebarData] = useState(null); // State for sidebar content
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for sidebar visibility
+  const [sidebarData, setSidebarData] = useState(null); // Holds fetched data
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Sidebar visibility
+  const [loading, setLoading] = useState(false); // Loading state
+  const [error, setError] = useState(null); // Error message state
 
   useEffect(() => {
     const map = new mapboxgl.Map({
-      container: "map", // ID of the HTML element where the map will be rendered
-      style: "mapbox://styles/mapbox/satellite-streets-v11", // Satellite view with streets
-      center: [-7.6921, 53.1424], // Longitude, Latitude (Ireland's center)
-      zoom: 15, // Zoomed closer to fields
+      container: "map",
+      style: "mapbox://styles/mapbox/satellite-streets-v11",
+      center: [-7.6921, 53.1424],
+      zoom: 15,
     });
 
-    const detectField = async (lng, lat) => {
-      const fieldSize = 0.0005; // Approximate size of a field in degrees
-      return {
+    const handleFieldClick = async (easting, northing) => {
+      setLoading(true); // Start loading
+      setError(null); // Clear previous errors
+      console.log(`Fetching data for Easting: ${easting}, Northing: ${northing}`);
+
+      try {
+        const response = await fetch("http://localhost:5000/get_data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ easting, northing }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error fetching data: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("Data fetched successfully:", data);
+
+        // Update sidebar data
+        setSidebarData({
+          easting,
+          northing,
+          soil: data.soil_data || null,
+          hydrology: data.hydrology_data || null,
+          elevation: data.elevation_data || null,
+          rainfall: data.rainfall_data || null,
+        });
+      } catch (err) {
+        console.error("Error fetching data:", err.message);
+        setError("Failed to fetch data. Please try again.");
+      } finally {
+        setLoading(false); // Stop loading
+      }
+    };
+
+    const updateMapWithField = (lng, lat) => {
+      const fieldSize = 0.0005; // Approximate field size
+      const fieldGeoJSON = {
         type: "FeatureCollection",
         features: [
           {
@@ -46,21 +86,17 @@ const Map = () => {
                 ],
               ],
             },
-            properties: {
-              name: "Detected Field",
-            },
+            properties: { name: "Detected Field" },
           },
         ],
       };
-    };
 
-    const updateMapWithField = (geojsonField) => {
       if (map.getSource("detected-field")) {
-        map.getSource("detected-field").setData(geojsonField);
+        map.getSource("detected-field").setData(fieldGeoJSON);
       } else {
         map.addSource("detected-field", {
           type: "geojson",
-          data: geojsonField,
+          data: fieldGeoJSON,
         });
 
         map.addLayer({
@@ -68,7 +104,7 @@ const Map = () => {
           type: "fill",
           source: "detected-field",
           paint: {
-            "fill-color": "#f00", // Highlight color
+            "fill-color": "#f00",
             "fill-opacity": 0.5,
           },
         });
@@ -85,21 +121,25 @@ const Map = () => {
       }
     };
 
-    map.on("click", async (e) => {
+    map.on("click", (e) => {
       const { lng, lat } = e.lngLat;
       const [easting, northing] = proj4(WGS84, ITM, [lng, lat]);
+      console.log(`Clicked at Longitude: ${lng}, Latitude: ${lat}`);
 
-      const detectedFieldGeoJSON = await detectField(lng, lat);
-      updateMapWithField(detectedFieldGeoJSON);
+      // Show detected field
+      updateMapWithField(lng, lat);
 
+      // Open the sidebar
       setSidebarData({
         longitude: lng.toFixed(4),
         latitude: lat.toFixed(4),
         easting: easting.toFixed(2),
         northing: northing.toFixed(2),
       });
-
       setIsSidebarOpen(true);
+
+      // Fetch additional data
+      handleFieldClick(easting, northing);
 
       map.flyTo({
         center: [lng, lat],
@@ -114,7 +154,7 @@ const Map = () => {
     <div className="map-container">
       <header className="map-header">
         <h1>Flood Risk Classifier</h1>
-        <p>CLick your field to classify your flood risk.</p>
+        <p>Click on your field to classify flood risk.</p>
       </header>
       <div className="map-content">
         <div id="map"></div>
@@ -125,14 +165,58 @@ const Map = () => {
           >
             &times;
           </button>
-          {sidebarData && (
+          {loading ? (
+            <p>Loading data...</p>
+          ) : error ? (
+            <p className="error">{error}</p>
+          ) : sidebarData ? (
             <div className="sidebar-content">
               <h4>Field Information</h4>
               <p><strong>Longitude:</strong> {sidebarData.longitude}</p>
               <p><strong>Latitude:</strong> {sidebarData.latitude}</p>
               <p><strong>Easting:</strong> {sidebarData.easting}</p>
               <p><strong>Northing:</strong> {sidebarData.northing}</p>
+              <h5>Soil Data</h5>
+              {sidebarData.soil ? (
+                <>
+                  <p><strong>Texture:</strong> {sidebarData.soil.Texture_Su}</p>
+                  <p><strong>Depth:</strong> {sidebarData.soil.DEPTH}</p>
+                  <p><strong>Description:</strong> {sidebarData.soil.PlainEngli}</p>
+                </>
+              ) : (
+                <p>No soil data available.</p>
+              )}
+              <h5>Hydrology Data</h5>
+              {sidebarData.hydrology ? (
+                <>
+                  <p><strong>Category:</strong> {sidebarData.hydrology.CATEGORY}</p>
+                  <p><strong>Material Description:</strong> {sidebarData.hydrology.ParMat_Des}</p>
+                  <p><strong>Drainage:</strong> {sidebarData.hydrology.SoilDraina}</p>
+                </>
+              ) : (
+                <p>No hydrology data available.</p>
+              )}
+              <h5>Elevation</h5>
+              {sidebarData.elevation ? (
+                <p><strong>Elevation:</strong> {sidebarData.elevation.Elevation} m</p>
+              ) : (
+                <p>No elevation data available.</p>
+              )}
+              <h5>Rainfall</h5>
+              {sidebarData.rainfall ? (
+                <>
+                  <p><strong>Annual:</strong> {sidebarData.rainfall.ANN} mm</p>
+                  <p><strong>Winter:</strong> {sidebarData.rainfall.DJF} mm</p>
+                  <p><strong>Spring:</strong> {sidebarData.rainfall.MAM} mm</p>
+                  <p><strong>Summer:</strong> {sidebarData.rainfall.JJA} mm</p>
+                  <p><strong>Autumn:</strong> {sidebarData.rainfall.SON} mm</p>
+                </>
+              ) : (
+                <p>No rainfall data available.</p>
+              )}
             </div>
+          ) : (
+            <p>No data available. Click a field to fetch data.</p>
           )}
         </aside>
       </div>

@@ -1,41 +1,32 @@
 const express = require("express");
+const cors = require("cors");
 const { exec } = require("child_process");
 
 const app = express();
-const PORT = 5000;
-
 app.use(express.json());
+app.use(cors()); // Enable CORS
 
 app.post("/get_data", (req, res) => {
     const { easting, northing } = req.body;
+    if (!easting || !northing) {
+        return res.status(400).json({ error: "Missing easting or northing" });
+    }
 
-    // Execute the Python script with the easting and northing as arguments
-    const command = `python ./src/get_data.py ${easting} ${northing}`;
-
+    const command = `python src/get_data.py ${easting} ${northing}`;
     exec(command, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Error executing script: ${error.message}`);
-            res.status(500).json({ error: "Failed to execute Python script" });
-            return;
+            console.error("Error executing Python script:", stderr);
+            return res.status(500).json({ error: "Failed to execute Python script" });
         }
-
-        if (stderr) {
-            console.error(`Script error: ${stderr}`);
-            res.status(500).json({ error: stderr });
-            return;
-        }
-
-        // Send the Python script's output as the response
         try {
-            const result = JSON.parse(stdout); // Parse JSON from the Python output
-            res.json(result);
+            const output = JSON.parse(stdout);
+            res.json(output);
         } catch (parseError) {
-            console.error(`Failed to parse Python output: ${parseError.message}`);
+            console.error("Error parsing Python script output:", stdout);
             res.status(500).json({ error: "Failed to parse Python output" });
         }
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Node.js server running on http://localhost:${PORT}`);
-});
+const PORT = 5000;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

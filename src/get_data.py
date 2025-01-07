@@ -35,33 +35,50 @@ for col in required_rainfall_columns:
     if col not in rainfall_data.columns:
         raise ValueError(f"Missing required column: {col} in rainfall_data.csv")
 
+
+def find_nearest(df, easting, northing):
+    """Find the nearest point in a DataFrame based on Euclidean distance."""
+    df['Distance'] = ((df['Easting'] - easting) ** 2 + (df['Northing'] - northing) ** 2).pow(0.5)
+    return df.loc[df['Distance'].idxmin()]
+
+
 def get_combined_data(easting, northing):
     point = Point(easting, northing)
     point_gdf = gpd.GeoDataFrame(index=[0], geometry=[point], crs=soil_gdf.crs)
 
-    soil_result = gpd.sjoin(point_gdf, soil_gdf, how="inner", predicate='intersects')
-    hydrology_result = gpd.sjoin(point_gdf, hydrology_gdf, how="inner", predicate='intersects')
+    # Find the nearest soil data
+    if not soil_gdf.empty:
+        soil_gdf['Distance'] = soil_gdf.geometry.apply(lambda geom: geom.distance(point))
+        nearest_soil = soil_gdf.loc[soil_gdf['Distance'].idxmin()]
+    else:
+        nearest_soil = None
 
-    elevation_data['Distance'] = ((elevation_data['Easting'] - easting) ** 2 +
-                                  (elevation_data['Northing'] - northing) ** 2).pow(0.5)
-    closest_elevation = elevation_data.loc[elevation_data['Distance'].idxmin()]
+    # Find the nearest hydrology data
+    if not hydrology_gdf.empty:
+        hydrology_gdf['Distance'] = hydrology_gdf.geometry.apply(lambda geom: geom.distance(point))
+        nearest_hydrology = hydrology_gdf.loc[hydrology_gdf['Distance'].idxmin()]
+    else:
+        nearest_hydrology = None
 
-    rainfall_data['Distance'] = ((rainfall_data['Easting'] - easting) ** 2 +
-                                 (rainfall_data['Northing'] - northing) ** 2).pow(0.5)
-    closest_rainfall = rainfall_data.loc[rainfall_data['Distance'].idxmin()]
+    # Find the closest elevation data
+    closest_elevation = find_nearest(elevation_data, easting, northing)
 
+    # Find the closest rainfall data
+    closest_rainfall = find_nearest(rainfall_data, easting, northing)
+
+    # Prepare the result
     result = {
         "soil_data": {
-            "POINT": str(soil_result.geometry.iloc[0]) if not soil_result.empty else None,
-            "Texture_Su": soil_result["Texture_Su"].iloc[0] if not soil_result.empty else None,
-            "TEXTURE": soil_result["TEXTURE"].iloc[0] if not soil_result.empty else None,
-            "DEPTH": soil_result["DEPTH"].iloc[0] if not soil_result.empty else None,
-            "PlainEngli": soil_result["PlainEngli"].iloc[0] if not soil_result.empty else None,
+            "POINT": str(nearest_soil.geometry) if nearest_soil is not None else None,
+            "Texture_Su": nearest_soil["Texture_Su"] if nearest_soil is not None else None,
+            "TEXTURE": nearest_soil["TEXTURE"] if nearest_soil is not None else None,
+            "DEPTH": nearest_soil["DEPTH"] if nearest_soil is not None else None,
+            "PlainEngli": nearest_soil["PlainEngli"] if nearest_soil is not None else None,
         },
         "hydrology_data": {
-            "CATEGORY": hydrology_result["CATEGORY"].iloc[0] if not hydrology_result.empty else None,
-            "ParMat_Des": hydrology_result["ParMat_Des"].iloc[0] if not hydrology_result.empty else None,
-            "SoilDraina": hydrology_result["SoilDraina"].iloc[0] if not hydrology_result.empty else None,
+            "CATEGORY": nearest_hydrology["CATEGORY"] if nearest_hydrology is not None else None,
+            "ParMat_Des": nearest_hydrology["ParMat_Des"] if nearest_hydrology is not None else None,
+            "SoilDraina": nearest_hydrology["SoilDraina"] if nearest_hydrology is not None else None,
         },
         "elevation_data": {
             "Elevation": closest_elevation["Elevation"]
@@ -75,6 +92,7 @@ def get_combined_data(easting, northing):
         }
     }
     return result
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
