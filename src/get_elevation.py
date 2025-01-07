@@ -14,13 +14,15 @@ def find_closest_elevation(easting, northing):
         raise ValueError("The elevation data file is empty or not loaded correctly.")
 
     # Ensure required columns exist in the DataFrame
-    required_columns = {'IrishGrid_Easting', 'IrishGrid_Northing', 'Elevation'}
+
+    required_columns = {'Easting', 'Northing', 'Elevation'}
+
     if not required_columns.issubset(elevation_df.columns):
         raise ValueError(f"CSV is missing one or more required columns: {required_columns}")
 
     # Calculate the Euclidean distance to all points in the DataFrame
     elevation_df['Distance'] = np.sqrt(
-        (elevation_df['IrishGrid_Easting'] - easting) ** 2 + (elevation_df['IrishGrid_Northing'] - northing) ** 2
+        (elevation_df['Easting'] - easting) ** 2 + (elevation_df['Northing'] - northing) ** 2
     )
 
     # Find the row with the minimum distance
