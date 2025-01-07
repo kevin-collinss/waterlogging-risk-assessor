@@ -33,6 +33,7 @@ for col in required_rainfall_columns:
     if col not in rainfall_data.columns:
         raise ValueError(f"Missing required column: {col} in rainfall_data.csv")
 
+
 def get_combined_data(easting, northing):
     """
     Fetch combined soil, hydrology, elevation, and rainfall data for a given easting and northing.
@@ -46,13 +47,11 @@ def get_combined_data(easting, northing):
     hydrology_result = gpd.sjoin(point_gdf, hydrology_gdf, how="inner", predicate='intersects')
 
     # Find the closest elevation point using Euclidean distance
-    elevation_data['Distance'] = ((elevation_data['Easting'] - easting) ** 2 +
-                                  (elevation_data['Northing'] - northing) ** 2).pow(0.5)
+    elevation_data['Distance'] = ((elevation_data['Easting'] - easting) ** 2 + (elevation_data['Northing'] - northing) ** 2).pow(0.5)
     closest_elevation = elevation_data.loc[elevation_data['Distance'].idxmin()]
 
     # Find the closest rainfall point using Euclidean distance
-    rainfall_data['Distance'] = ((rainfall_data['Easting'] - easting) ** 2 +
-                                 (rainfall_data['Northing'] - northing) ** 2).pow(0.5)
+    rainfall_data['Distance'] = ((rainfall_data['Easting'] - easting) ** 2 + (rainfall_data['Northing'] - northing) ** 2).pow(0.5)
     closest_rainfall = rainfall_data.loc[rainfall_data['Distance'].idxmin()]
 
     # Extract required fields
@@ -96,6 +95,7 @@ def get_combined_data(easting, northing):
         "rainfall_data": rainfall_data_result
     }
     return result
+
 
 # Example Easting and Northing for testing
 easting = 159270
