@@ -14,7 +14,9 @@ def find_closest_elevation(easting, northing):
         raise ValueError("The elevation data file is empty or not loaded correctly.")
 
     # Ensure required columns exist in the DataFrame
+
     required_columns = {'Easting', 'Northing', 'Elevation'}
+
     if not required_columns.issubset(elevation_df.columns):
         raise ValueError(f"CSV is missing one or more required columns: {required_columns}")
 
