@@ -3,23 +3,22 @@ import mapboxgl from "mapbox-gl";
 import proj4 from "proj4";
 import "./Map.css";
 
-mapboxgl.accessToken = "pk.eyJ1Ijoia2V2aW5jb2wiLCJhIjoiY20zazJ2dTF2MDhqNDJzcGVwdm1rbnlkYyJ9.cVBc9ZK9hR92V6o3vDWz5g";
+mapboxgl.accessToken = "";
+
+const WGS84 = "EPSG:4326"; // WGS84 (Longitude, Latitude)
+const IRISH_GRID = "EPSG:29903";
 
 // Define projections
-const WGS84 = "EPSG:4326"; // WGS84 (Longitude, Latitude)
-const ITM = "EPSG:2157"; // Irish Transverse Mercator (ITM)
-
-// Define ITM projection using Proj4 string (specific to Ireland)
 proj4.defs(
-  ITM,
-  "+proj=tmerc +lat_0=53.5 +lon_0=-8 +k=0.99982 +x_0=600000 +y_0=750000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+  "EPSG:29903",
+  "+proj=tmerc +lat_0=53.5 +lon_0=-8 +k=1.000035 +x_0=200000 +y_0=250000 +ellps=airy +units=m +no_defs"
 );
 
 const Map = () => {
-  const [sidebarData, setSidebarData] = useState(null); // Holds fetched data
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Sidebar visibility
-  const [loading, setLoading] = useState(false); // Loading state
-  const [error, setError] = useState(null); // Error message state
+  const [sidebarData, setSidebarData] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const map = new mapboxgl.Map({
@@ -29,11 +28,10 @@ const Map = () => {
       zoom: 15,
     });
 
-    const handleFieldClick = async (easting, northing) => {
-      setLoading(true); // Start loading
-      setError(null); // Clear previous errors
-      console.log(`Fetching data for Easting: ${easting}, Northing: ${northing}`);
-
+    const handleFieldClick = async (easting, northing, lng, lat) => {
+      setLoading(true);
+      setError(null);
+    
       try {
         const response = await fetch("http://localhost:5000/get_data", {
           method: "POST",
@@ -42,33 +40,29 @@ const Map = () => {
           },
           body: JSON.stringify({ easting, northing }),
         });
-
-        if (!response.ok) {
-          throw new Error(`Error fetching data: ${response.statusText}`);
-        }
-
+    
+        if (!response.ok) throw new Error(`Error fetching data: ${response.statusText}`);
+    
         const data = await response.json();
-        console.log("Data fetched successfully:", data);
-
-        // Update sidebar data
         setSidebarData({
-          easting,
-          northing,
+          longitude: lng.toFixed(4), // Add longitude
+          latitude: lat.toFixed(4), // Add latitude
+          easting: easting.toFixed(2),
+          northing: northing.toFixed(2),
           soil: data.soil_data || null,
           hydrology: data.hydrology_data || null,
           elevation: data.elevation_data || null,
           rainfall: data.rainfall_data || null,
         });
       } catch (err) {
-        console.error("Error fetching data:", err.message);
         setError("Failed to fetch data. Please try again.");
       } finally {
-        setLoading(false); // Stop loading
+        setLoading(false);
       }
-    };
+    };    
 
     const updateMapWithField = (lng, lat) => {
-      const fieldSize = 0.0005; // Approximate field size
+      const fieldSize = 0.0005;
       const fieldGeoJSON = {
         type: "FeatureCollection",
         features: [
@@ -94,11 +88,7 @@ const Map = () => {
       if (map.getSource("detected-field")) {
         map.getSource("detected-field").setData(fieldGeoJSON);
       } else {
-        map.addSource("detected-field", {
-          type: "geojson",
-          data: fieldGeoJSON,
-        });
-
+        map.addSource("detected-field", { type: "geojson", data: fieldGeoJSON });
         map.addLayer({
           id: "detected-field-fill",
           type: "fill",
@@ -108,7 +98,6 @@ const Map = () => {
             "fill-opacity": 0.5,
           },
         });
-
         map.addLayer({
           id: "detected-field-border",
           type: "line",
@@ -123,29 +112,18 @@ const Map = () => {
 
     map.on("click", (e) => {
       const { lng, lat } = e.lngLat;
-      const [easting, northing] = proj4(WGS84, ITM, [lng, lat]);
-      console.log(`Clicked at Longitude: ${lng}, Latitude: ${lat}`);
-
-      // Show detected field
+      const [easting, northing] = proj4(WGS84, IRISH_GRID, [lng, lat]);
+      
       updateMapWithField(lng, lat);
-
-      // Open the sidebar
-      setSidebarData({
-        longitude: lng.toFixed(4),
-        latitude: lat.toFixed(4),
-        easting: easting.toFixed(2),
-        northing: northing.toFixed(2),
-      });
+      handleFieldClick(easting, northing, lng, lat); // Pass lng and lat here
       setIsSidebarOpen(true);
-
-      // Fetch additional data
-      handleFieldClick(easting, northing);
-
+    
       map.flyTo({
         center: [lng, lat],
         zoom: 16,
       });
     });
+    
 
     return () => map.remove();
   }, []);
@@ -159,10 +137,7 @@ const Map = () => {
       <div className="map-content">
         <div id="map"></div>
         <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-          <button
-            className="close-button"
-            onClick={() => setIsSidebarOpen(false)}
-          >
+          <button className="close-button" onClick={() => setIsSidebarOpen(false)}>
             &times;
           </button>
           {loading ? (
@@ -176,6 +151,7 @@ const Map = () => {
               <p><strong>Latitude:</strong> {sidebarData.latitude}</p>
               <p><strong>Easting:</strong> {sidebarData.easting}</p>
               <p><strong>Northing:</strong> {sidebarData.northing}</p>
+              <hr />
               <h5>Soil Data</h5>
               {sidebarData.soil ? (
                 <>
@@ -186,6 +162,7 @@ const Map = () => {
               ) : (
                 <p>No soil data available.</p>
               )}
+              <hr />
               <h5>Hydrology Data</h5>
               {sidebarData.hydrology ? (
                 <>
@@ -196,12 +173,14 @@ const Map = () => {
               ) : (
                 <p>No hydrology data available.</p>
               )}
+              <hr />
               <h5>Elevation</h5>
               {sidebarData.elevation ? (
                 <p><strong>Elevation:</strong> {sidebarData.elevation.Elevation} m</p>
               ) : (
                 <p>No elevation data available.</p>
               )}
+              <hr />
               <h5>Rainfall</h5>
               {sidebarData.rainfall ? (
                 <>
