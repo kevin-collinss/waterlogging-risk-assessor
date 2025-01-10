@@ -1,23 +1,21 @@
-import sys
-import json
+import psycopg2
 import pandas as pd
-import geopandas as gpd
-from shapely.geometry import Point
-from shapely import wkt
+import numpy as np
+import json
+import sys
 
-# Load the data files
-soil_data = pd.read_csv("data/soil_data.csv")
-hydrology_data = pd.read_csv("data/hydrology_data.csv")
+# Database connection parameters
+DB_CONFIG = {
+    "dbname": "soil_data",
+    "user": "postgres",
+    "password": "1234",
+    "host": "localhost",
+    "port": 5432,
+}
+
+# Load elevation and rainfall data files
 elevation_data = pd.read_csv("data/elevation_data.csv")
 rainfall_data = pd.read_csv("data/rainfall_data.csv")
-
-# Parse geometry columns in soil and hydrology data
-soil_data['geometry'] = soil_data['geometry'].apply(wkt.loads)
-hydrology_data['geometry'] = hydrology_data['geometry'].apply(wkt.loads)
-
-# Convert to GeoDataFrames
-soil_gdf = gpd.GeoDataFrame(soil_data, geometry=soil_data['geometry'])
-hydrology_gdf = gpd.GeoDataFrame(hydrology_data, geometry=hydrology_data['geometry'])
 
 # Ensure elevation and rainfall data have no extra spaces in column names
 elevation_data.rename(columns=lambda x: x.strip(), inplace=True)
@@ -36,36 +34,71 @@ for col in required_rainfall_columns:
         raise ValueError(f"Missing required column: {col} in rainfall_data.csv")
 
 
+def query_database(table_name, easting, northing):
+    """Query the database for the closest point in the specified table."""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+
+        query = f"""
+        SELECT *
+        FROM {table_name}
+        ORDER BY ST_SetSRID(geometry, 29903) <-> ST_SetSRID(ST_MakePoint(%s, %s), 29903)
+        LIMIT 1;
+        """
+        cursor.execute(query, (easting, northing))
+        result = cursor.fetchone()
+
+        if table_name == "soil_data":
+            return {
+                "Texture_Su": result[1],
+                "TEXTURE": result[2],
+                "DEPTH": result[3],
+                "PlainEngli": result[4],
+            }
+        elif table_name == "hydrology_data":
+            return {
+                "CATEGORY": result[1],
+                "ParMat_Des": result[2],
+                "SoilDraina": result[3],
+            }
+
+    except Exception as e:
+        print(f"Database error: {e}")
+        return None
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+
 def get_combined_data(easting, northing):
-    point = Point(easting, northing)
-    point_gdf = gpd.GeoDataFrame(index=[0], geometry=[point], crs=soil_gdf.crs)
+    # Query soil and hydrology data from the database
+    soil_data = query_database("soil_data", easting, northing)
+    hydrology_data = query_database("hydrology_data", easting, northing)
 
-    soil_result = gpd.sjoin(point_gdf, soil_gdf, how="inner", predicate='intersects')
-    hydrology_result = gpd.sjoin(point_gdf, hydrology_gdf, how="inner", predicate='intersects')
-
-    elevation_data['Distance'] = ((elevation_data['Easting'] - easting) ** 2 + (elevation_data['Northing'] - northing) ** 2).pow(0.5)
+    # Find the closest elevation data point
+    elevation_data['Distance'] = np.sqrt((elevation_data['Easting'] - easting) ** 2 +
+                                         (elevation_data['Northing'] - northing) ** 2)
     closest_elevation = elevation_data.loc[elevation_data['Distance'].idxmin()]
 
-    rainfall_data['Distance'] = ((rainfall_data['Easting'] - easting) ** 2 + (rainfall_data['Northing'] - northing) ** 2).pow(0.5)
+    # Find the closest rainfall data point
+    rainfall_data['Distance'] = np.sqrt((rainfall_data['Easting'] - easting) ** 2 +
+                                        (rainfall_data['Northing'] - northing) ** 2)
     closest_rainfall = rainfall_data.loc[rainfall_data['Distance'].idxmin()]
 
+    # Combine results
     result = {
-        "soil_data": {
-            "POINT": str(soil_result.geometry.iloc[0]) if not soil_result.empty else None,
-            "Texture_Su": soil_result["Texture_Su"].iloc[0] if not soil_result.empty else None,
-            "TEXTURE": soil_result["TEXTURE"].iloc[0] if not soil_result.empty and pd.notna(soil_result["TEXTURE"].iloc[0]) else None,
-            "DEPTH": soil_result["DEPTH"].iloc[0] if not soil_result.empty and pd.notna(soil_result["DEPTH"].iloc[0]) else None,
-            "PlainEngli": soil_result["PlainEngli"].iloc[0] if not soil_result.empty else None,
-        },
-        "hydrology_data": {
-            "CATEGORY": hydrology_result["CATEGORY"].iloc[0] if not hydrology_result.empty else None,
-            "ParMat_Des": hydrology_result["ParMat_Des"].iloc[0] if not hydrology_result.empty else None,
-            "SoilDraina": hydrology_result["SoilDraina"].iloc[0] if not hydrology_result.empty else None,
-        },
+        "soil_data": soil_data,
+        "hydrology_data": hydrology_data,
         "elevation_data": {
+            "Easting": closest_elevation["Easting"],
+            "Northing": closest_elevation["Northing"],
             "Elevation": closest_elevation["Elevation"]
         },
         "rainfall_data": {
+            "Easting": closest_rainfall["Easting"],
+            "Northing": closest_rainfall["Northing"],
             "ANN": closest_rainfall["ANN"],
             "DJF": closest_rainfall["DJF"],
             "MAM": closest_rainfall["MAM"],
