@@ -1,4 +1,5 @@
 import psycopg2
+from pyproj import Transformer
 import json
 import sys
 import numpy as np
@@ -11,6 +12,42 @@ DB_CONFIG = {
     "host": "localhost",
     "port": 5432,
 }
+
+transformer = Transformer.from_crs("EPSG:29903", "EPSG:2157", always_xy=True)
+
+def is_within_boundary(easting, northing):
+    """Check if the given point is within the boundary in the GeoPackage."""
+    try:
+        # Transform coordinates from EPSG:29903 to EPSG:2157
+        transformed_easting, transformed_northing = transformer.transform(easting, northing)
+
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+
+        query = """
+        SELECT PROVINCE
+        FROM provinces___gen_20m_2019
+        WHERE ST_Contains(
+            SHAPE,
+            ST_SetSRID(ST_MakePoint(%s, %s), 2157)
+        );
+        """
+        cursor.execute(query, (transformed_easting, transformed_northing))
+        result = cursor.fetchone()
+
+        if result:
+            return True
+        else:
+            return False
+
+    except Exception as e:
+        print(f"Database error: {e}")
+        return False
+
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
 
 def query_database(table_name, easting, northing):
     """Query the database for the closest point in the specified table."""
@@ -94,8 +131,12 @@ def query_database(table_name, easting, northing):
             cursor.close()
             conn.close()
 
-
 def get_combined_data(easting, northing):
+    # Check if the point is within the boundary
+    province = is_within_boundary(easting, northing)
+    if not province:
+        return {"error": "Point is outside the defined boundary"}
+
     # Query soil and hydrology data from the database
     soil_data = query_database("soil_data", easting, northing)
     hydrology_data = query_database("hydrology_data", easting, northing)
@@ -108,13 +149,13 @@ def get_combined_data(easting, northing):
 
     # Combine results
     result = {
+        "boundary_province": province,
         "soil_data": soil_data,
         "hydrology_data": hydrology_data,
         "elevation_data": elevation_data,
         "rainfall_data": rainfall_data,
     }
     return result
-
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
