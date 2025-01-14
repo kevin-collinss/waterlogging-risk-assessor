@@ -1,77 +1,160 @@
-import sys
+import psycopg2
+from pyproj import Transformer
 import json
-import pandas as pd
-import geopandas as gpd
-from shapely.geometry import Point
-from shapely import wkt
+import sys
 
-# Load the data files
-soil_data = pd.read_csv("data/soil_data.csv")
-hydrology_data = pd.read_csv("data/hydrology_data.csv")
-elevation_data = pd.read_csv("data/elevation_data.csv")
-rainfall_data = pd.read_csv("data/rainfall_data.csv")
+# Database connection parameters
+DB_CONFIG = {
+    "dbname": "soil_data",
+    "user": "postgres",
+    "password": "1234",
+    "host": "localhost",
+    "port": 5432,
+}
 
-# Parse geometry columns in soil and hydrology data
-soil_data['geometry'] = soil_data['geometry'].apply(wkt.loads)
-hydrology_data['geometry'] = hydrology_data['geometry'].apply(wkt.loads)
+transformer = Transformer.from_crs("EPSG:29903", "EPSG:2157", always_xy=True)
 
-# Convert to GeoDataFrames
-soil_gdf = gpd.GeoDataFrame(soil_data, geometry=soil_data['geometry'])
-hydrology_gdf = gpd.GeoDataFrame(hydrology_data, geometry=hydrology_data['geometry'])
 
-# Ensure elevation and rainfall data have no extra spaces in column names
-elevation_data.rename(columns=lambda x: x.strip(), inplace=True)
-rainfall_data.rename(columns=lambda x: x.strip(), inplace=True)
+def is_within_boundary(easting, northing):
+    """Check if the given point is within the boundary in the GeoPackage."""
+    try:
+        # Transform coordinates from EPSG:29903 to EPSG:2157
+        transformed_easting, transformed_northing = transformer.transform(easting, northing)
 
-# Ensure required columns exist
-required_elevation_columns = ['Easting', 'Northing', 'Elevation']
-required_rainfall_columns = ['Easting', 'Northing', 'ANN', 'DJF', 'MAM', 'JJA', 'SON']
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
 
-for col in required_elevation_columns:
-    if col not in elevation_data.columns:
-        raise ValueError(f"Missing required column: {col} in elevation_data.csv")
+        query = """
+        SELECT PROVINCE
+        FROM provinces___gen_20m_2019
+        WHERE ST_Contains(
+            SHAPE,
+            ST_SetSRID(ST_MakePoint(%s, %s), 2157)
+        );
+        """
+        cursor.execute(query, (transformed_easting, transformed_northing))
+        result = cursor.fetchone()
 
-for col in required_rainfall_columns:
-    if col not in rainfall_data.columns:
-        raise ValueError(f"Missing required column: {col} in rainfall_data.csv")
+        if result:
+            return True
+        else:
+            return False
+
+    except Exception as e:
+        print(f"Database error: {e}")
+        return False
+
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+
+def query_database(table_name, easting, northing):
+    """Query the database for the closest point in the specified table."""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+
+        if table_name == "soil_data":
+            # Query for soil data using geometry
+            query = f"""
+            SELECT *
+            FROM {table_name}
+            ORDER BY ST_SetSRID(geometry, 29903) <-> ST_SetSRID(ST_MakePoint(%s, %s), 29903)
+            LIMIT 1;
+            """
+        elif table_name == "hydrology_data":
+            # Query for hydrology data using geometry
+            query = f"""
+            SELECT *
+            FROM {table_name}
+            ORDER BY ST_SetSRID(geometry, 29903) <-> ST_SetSRID(ST_MakePoint(%s, %s), 29903)
+            LIMIT 1;
+            """
+        elif table_name == "elevation_data":
+            # Query for elevation data using easting and northing
+            query = f"""
+            SELECT easting, northing, elevation
+            FROM {table_name}
+            ORDER BY
+                (POWER(easting - %s, 2) + POWER(northing - %s, 2))
+            LIMIT 1;
+            """
+        elif table_name == "rainfall_data":
+            # Query for rainfall data using easting and northing
+            query = f"""
+            SELECT easting, northing, ann, djf, mam, jja, son
+            FROM {table_name}
+            ORDER BY
+                (POWER(easting - %s, 2) + POWER(northing - %s, 2))
+            LIMIT 1;
+            """
+        cursor.execute(query, (easting, northing))
+        result = cursor.fetchone()
+
+        if table_name == "soil_data":
+            return {
+                "Texture_Su": result[1],
+                "TEXTURE": result[2],
+                "DEPTH": result[3],
+                "PlainEngli": result[4],
+            }
+        elif table_name == "hydrology_data":
+            return {
+                "CATEGORY": result[1],
+                "ParMat_Des": result[2],
+                "SoilDraina": result[3],
+            }
+        elif table_name == "elevation_data":
+            return {
+                "Easting": result[0],
+                "Northing": result[1],
+                "Elevation": result[2],
+            }
+        elif table_name == "rainfall_data":
+            return {
+                "Easting": result[0],
+                "Northing": result[1],
+                "ANN": result[2],
+                "DJF": result[3],
+                "MAM": result[4],
+                "JJA": result[5],
+                "SON": result[6],
+            }
+
+    except Exception as e:
+        print(f"Database error: {e}")
+        return None
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
 
 
 def get_combined_data(easting, northing):
-    point = Point(easting, northing)
-    point_gdf = gpd.GeoDataFrame(index=[0], geometry=[point], crs=soil_gdf.crs)
+    # Check if the point is within the boundary
+    province = is_within_boundary(easting, northing)
+    if not province:
+        return {"error": "Point is outside the defined boundary"}
 
-    soil_result = gpd.sjoin(point_gdf, soil_gdf, how="inner", predicate='intersects')
-    hydrology_result = gpd.sjoin(point_gdf, hydrology_gdf, how="inner", predicate='intersects')
+    # Query soil and hydrology data from the database
+    soil_data = query_database("soil_data", easting, northing)
+    hydrology_data = query_database("hydrology_data", easting, northing)
 
-    elevation_data['Distance'] = ((elevation_data['Easting'] - easting) ** 2 + (elevation_data['Northing'] - northing) ** 2).pow(0.5)
-    closest_elevation = elevation_data.loc[elevation_data['Distance'].idxmin()]
+    # Query elevation data from the database
+    elevation_data = query_database("elevation_data", easting, northing)
 
-    rainfall_data['Distance'] = ((rainfall_data['Easting'] - easting) ** 2 + (rainfall_data['Northing'] - northing) ** 2).pow(0.5)
-    closest_rainfall = rainfall_data.loc[rainfall_data['Distance'].idxmin()]
+    # Query rainfall data from the database
+    rainfall_data = query_database("rainfall_data", easting, northing)
 
+    # Combine results
     result = {
-        "soil_data": {
-            "POINT": str(soil_result.geometry.iloc[0]) if not soil_result.empty else None,
-            "Texture_Su": soil_result["Texture_Su"].iloc[0] if not soil_result.empty else None,
-            "TEXTURE": soil_result["TEXTURE"].iloc[0] if not soil_result.empty and pd.notna(soil_result["TEXTURE"].iloc[0]) else None,
-            "DEPTH": soil_result["DEPTH"].iloc[0] if not soil_result.empty and pd.notna(soil_result["DEPTH"].iloc[0]) else None,
-            "PlainEngli": soil_result["PlainEngli"].iloc[0] if not soil_result.empty else None,
-        },
-        "hydrology_data": {
-            "CATEGORY": hydrology_result["CATEGORY"].iloc[0] if not hydrology_result.empty else None,
-            "ParMat_Des": hydrology_result["ParMat_Des"].iloc[0] if not hydrology_result.empty else None,
-            "SoilDraina": hydrology_result["SoilDraina"].iloc[0] if not hydrology_result.empty else None,
-        },
-        "elevation_data": {
-            "Elevation": closest_elevation["Elevation"]
-        },
-        "rainfall_data": {
-            "ANN": closest_rainfall["ANN"],
-            "DJF": closest_rainfall["DJF"],
-            "MAM": closest_rainfall["MAM"],
-            "JJA": closest_rainfall["JJA"],
-            "SON": closest_rainfall["SON"]
-        }
+        "boundary_province": province,
+        "soil_data": soil_data,
+        "hydrology_data": hydrology_data,
+        "elevation_data": elevation_data,
+        "rainfall_data": rainfall_data,
     }
     return result
 
