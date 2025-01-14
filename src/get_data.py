@@ -2,7 +2,6 @@ import psycopg2
 from pyproj import Transformer
 import json
 import sys
-import numpy as np
 
 # Database connection parameters
 DB_CONFIG = {
@@ -14,6 +13,7 @@ DB_CONFIG = {
 }
 
 transformer = Transformer.from_crs("EPSG:29903", "EPSG:2157", always_xy=True)
+
 
 def is_within_boundary(easting, northing):
     """Check if the given point is within the boundary in the GeoPackage."""
@@ -48,6 +48,7 @@ def is_within_boundary(easting, northing):
         if conn:
             cursor.close()
             conn.close()
+
 
 def query_database(table_name, easting, northing):
     """Query the database for the closest point in the specified table."""
@@ -89,7 +90,6 @@ def query_database(table_name, easting, northing):
                 (POWER(easting - %s, 2) + POWER(northing - %s, 2))
             LIMIT 1;
             """
-        
         cursor.execute(query, (easting, northing))
         result = cursor.fetchone()
 
@@ -131,6 +131,7 @@ def query_database(table_name, easting, northing):
             cursor.close()
             conn.close()
 
+
 def get_combined_data(easting, northing):
     # Check if the point is within the boundary
     province = is_within_boundary(easting, northing)
@@ -156,6 +157,7 @@ def get_combined_data(easting, northing):
         "rainfall_data": rainfall_data,
     }
     return result
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
