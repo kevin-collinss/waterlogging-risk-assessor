@@ -13,7 +13,7 @@ NORTHING_MAX = 462251
 output_csv = "training_data.csv"
 
 # Define the number of valid data points to extract
-num_points = 10
+num_points = 10000
 
 # Features to extract (including Easting and Northing)
 fields = ["Easting", "Northing", "Texture", "Description", "Elevation", "Annual_Rainfall", "Hydrology_Category"]
@@ -42,9 +42,15 @@ with open(output_csv, "w", newline="") as csvfile:
                 # Parse the response
                 data = response.json()
 
-                # Check if soil data is empty; skip if it is
-                if not data["soil_data"].get("TEXTURE") and not data["soil_data"].get("PlainEngli"):
-                    print(f"Skipped water point at Easting: {easting}, Northing: {northing}")
+                # Check if all relevant data exists
+                if (
+                    not data["soil_data"].get("TEXTURE") or
+                    not data["soil_data"].get("PlainEngli") or
+                    not data["elevation_data"].get("Elevation") or
+                    not data["rainfall_data"].get("ANN") or
+                    not data["hydrology_data"].get("CATEGORY")
+                ):
+                    print(f"Skipped incomplete or out-of-bounds data at Easting: {easting}, Northing: {northing}")
                     continue
 
                 # Extract the required fields
