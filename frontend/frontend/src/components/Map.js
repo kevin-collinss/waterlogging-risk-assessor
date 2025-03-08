@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import proj4 from "proj4";
 import "./Map.css";
 
-mapboxgl.accessToken = "pk.eyJ1Ijoia2V2aW5jb2wiLCJhIjoiY20zazJ2dTF2MDhqNDJzcGVwdm1rbnlkYyJ9.cVBc9ZK9hR92V6o3vDWz5g";
+mapboxgl.accessToken ="pk.eyJ1Ijoia2V2aW5jb2wiLCJhIjoiY20zazJ2dTF2MDhqNDJzcGVwdm1rbnlkYyJ9.cVBc9ZK9hR92V6o3vDWz5g";
 
 const WGS84 = "EPSG:4326"; // WGS84 (Longitude, Latitude)
 const IRISH_GRID = "EPSG:29903";
@@ -26,7 +26,11 @@ const Map = () => {
       style: "mapbox://styles/mapbox/satellite-streets-v11",
       center: [-7.6921, 53.1424],
       zoom: 15,
+      pitch: 0,
+      bearing: 0,
     });
+
+    let stampMarker = null; // Store the stamp marker so it can be replaced on new clicks
 
     const handleFieldClick = async (easting, northing, lng, lat) => {
       setLoading(true);
@@ -35,9 +39,7 @@ const Map = () => {
       try {
         const response = await fetch("http://localhost:5000/get_data", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ easting, northing }),
         });
 
@@ -46,8 +48,8 @@ const Map = () => {
 
         const data = await response.json();
         setSidebarData({
-          longitude: lng.toFixed(4), // Add longitude
-          latitude: lat.toFixed(4), // Add latitude
+          longitude: lng.toFixed(4),
+          latitude: lat.toFixed(4),
           easting: easting.toFixed(2),
           northing: northing.toFixed(2),
           soil: data.soil_data || null,
@@ -64,67 +66,41 @@ const Map = () => {
       }
     };
 
-    const updateMapWithField = (lng, lat) => {
-      const fieldSize = 0.0005;
-      const fieldGeoJSON = {
-        type: "FeatureCollection",
-        features: [
-          {
-            type: "Feature",
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [
-                  [lng - fieldSize, lat - fieldSize],
-                  [lng + fieldSize, lat - fieldSize],
-                  [lng + fieldSize, lat + fieldSize],
-                  [lng - fieldSize, lat + fieldSize],
-                  [lng - fieldSize, lat - fieldSize],
-                ],
-              ],
-            },
-            properties: { name: "Detected Field" },
-          },
-        ],
-      };
-
-      if (map.getSource("detected-field")) {
-        map.getSource("detected-field").setData(fieldGeoJSON);
-      } else {
-        map.addSource("detected-field", { type: "geojson", data: fieldGeoJSON });
-        map.addLayer({
-          id: "detected-field-fill",
-          type: "fill",
-          source: "detected-field",
-          paint: {
-            "fill-color": "#f00",
-            "fill-opacity": 0.5,
-          },
-        });
-        map.addLayer({
-          id: "detected-field-border",
-          type: "line",
-          source: "detected-field",
-          paint: {
-            "line-color": "#000",
-            "line-width": 2,
-          },
-        });
-      }
-    };
-
     map.on("click", (e) => {
       const { lng, lat } = e.lngLat;
+      // Convert from WGS84 to IRISH_GRID
       const [easting, northing] = proj4(WGS84, IRISH_GRID, [lng, lat]);
 
-      updateMapWithField(lng, lat);
-      handleFieldClick(easting, northing, lng, lat); // Pass lng and lat here
+      // Remove existing stamp marker if it exists
+      if (stampMarker) {
+        stampMarker.remove();
+      }
+
+      // Create a custom element for the stamp marker
+      const stampEl = document.createElement("div");
+      stampEl.className = "stamp-marker";
+      stampEl.style.backgroundImage = "url('/images/soil_gathering.png')";
+      stampEl.style.width = "50px";
+      stampEl.style.height = "50px";
+      stampEl.style.backgroundSize = "contain";
+      stampEl.style.backgroundRepeat = "no-repeat";
+      // Optionally add a border to help debug positioning
+      // stampEl.style.border = "2px solid red";
+
+      // Create the marker with no offset and anchor it by center
+      stampMarker = new mapboxgl.Marker({
+        element: stampEl,
+        anchor: "center",
+        offset: [0, 0],
+      })
+        .setLngLat([lng, lat])
+        .addTo(map);
+
+      // Fetch data and update sidebar
+      handleFieldClick(easting, northing, lng, lat);
       setIsSidebarOpen(true);
 
-      map.flyTo({
-        center: [lng, lat],
-        zoom: 16,
-      });
+      map.flyTo({ center: [lng, lat], zoom: 16 });
     });
 
     return () => map.remove();
@@ -148,11 +124,12 @@ const Map = () => {
             <p className="error">{error}</p>
           ) : sidebarData ? (
             <div className="sidebar-content">
-              <h4>Field Information</h4>
               {sidebarData.cluster_prediction !== undefined ? (
                 <div>
                   <h5>Cluster Prediction</h5>
-                  <p><strong>Predicted Cluster:</strong> {sidebarData.cluster_prediction}</p>
+                  <p>
+                    <strong>Predicted Cluster:</strong> {sidebarData.cluster_prediction}
+                  </p>
                 </div>
               ) : sidebarData.cluster_prediction_error ? (
                 <div>
@@ -161,17 +138,31 @@ const Map = () => {
                 </div>
               ) : null}
               <hr />
-              <p><strong>Longitude:</strong> {sidebarData.longitude}</p>
-              <p><strong>Latitude:</strong> {sidebarData.latitude}</p>
-              <p><strong>Easting:</strong> {sidebarData.easting}</p>
-              <p><strong>Northing:</strong> {sidebarData.northing}</p>
+              <p>
+                <strong>Longitude:</strong> {sidebarData.longitude}
+              </p>
+              <p>
+                <strong>Latitude:</strong> {sidebarData.latitude}
+              </p>
+              <p>
+                <strong>Easting:</strong> {sidebarData.easting}
+              </p>
+              <p>
+                <strong>Northing:</strong> {sidebarData.northing}
+              </p>
               <hr />
               <h5>Soil Data</h5>
               {sidebarData.soil ? (
                 <>
-                  <p><strong>Texture:</strong> {sidebarData.soil.Texture_Su}</p>
-                  <p><strong>Depth:</strong> {sidebarData.soil.DEPTH}</p>
-                  <p><strong>Description:</strong> {sidebarData.soil.PlainEngli}</p>
+                  <p>
+                    <strong>Texture:</strong> {sidebarData.soil.Texture_Su}
+                  </p>
+                  <p>
+                    <strong>Depth:</strong> {sidebarData.soil.DEPTH}
+                  </p>
+                  <p>
+                    <strong>Description:</strong> {sidebarData.soil.PlainEngli}
+                  </p>
                 </>
               ) : (
                 <p>No soil data available.</p>
@@ -180,9 +171,15 @@ const Map = () => {
               <h5>Hydrology Data</h5>
               {sidebarData.hydrology ? (
                 <>
-                  <p><strong>Category:</strong> {sidebarData.hydrology.CATEGORY}</p>
-                  <p><strong>Material Description:</strong> {sidebarData.hydrology.ParMat_Des}</p>
-                  <p><strong>Drainage:</strong> {sidebarData.hydrology.SoilDraina}</p>
+                  <p>
+                    <strong>Category:</strong> {sidebarData.hydrology.CATEGORY}
+                  </p>
+                  <p>
+                    <strong>Material Description:</strong> {sidebarData.hydrology.ParMat_Des}
+                  </p>
+                  <p>
+                    <strong>Drainage:</strong> {sidebarData.hydrology.SoilDraina}
+                  </p>
                 </>
               ) : (
                 <p>No hydrology data available.</p>
@@ -190,7 +187,9 @@ const Map = () => {
               <hr />
               <h5>Elevation</h5>
               {sidebarData.elevation ? (
-                <p><strong>Elevation:</strong> {sidebarData.elevation.Elevation} m</p>
+                <p>
+                  <strong>Elevation:</strong> {sidebarData.elevation.Elevation} m
+                </p>
               ) : (
                 <p>No elevation data available.</p>
               )}
@@ -198,11 +197,21 @@ const Map = () => {
               <h5>Rainfall</h5>
               {sidebarData.rainfall ? (
                 <>
-                  <p><strong>Annual:</strong> {sidebarData.rainfall.ANN} mm</p>
-                  <p><strong>Winter:</strong> {sidebarData.rainfall.DJF} mm</p>
-                  <p><strong>Spring:</strong> {sidebarData.rainfall.MAM} mm</p>
-                  <p><strong>Summer:</strong> {sidebarData.rainfall.JJA} mm</p>
-                  <p><strong>Autumn:</strong> {sidebarData.rainfall.SON} mm</p>
+                  <p>
+                    <strong>Annual:</strong> {sidebarData.rainfall.ANN} mm
+                  </p>
+                  <p>
+                    <strong>Winter:</strong> {sidebarData.rainfall.DJF} mm
+                  </p>
+                  <p>
+                    <strong>Spring:</strong> {sidebarData.rainfall.MAM} mm
+                  </p>
+                  <p>
+                    <strong>Summer:</strong> {sidebarData.rainfall.JJA} mm
+                  </p>
+                  <p>
+                    <strong>Autumn:</strong> {sidebarData.rainfall.SON} mm
+                  </p>
                 </>
               ) : (
                 <p>No rainfall data available.</p>
@@ -219,5 +228,4 @@ const Map = () => {
     </div>
   );
 };
-
 export default Map;

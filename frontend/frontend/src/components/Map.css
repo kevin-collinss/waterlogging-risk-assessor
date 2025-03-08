@@ -1,103 +1,112 @@
-/* General Styling */
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #f8f9fa;
-  }
-  
-  .map-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-  
-  /* Header Styling */
-  .map-header {
-    background-color: #343a40;
-    color: #ffffff;
-    padding: 15px;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  }
-  
-  .map-header h1 {
-    margin: 0;
-    font-size: 1.8rem;
-  }
-  
-  .map-header p {
-    margin: 5px 0 0;
-    font-size: 1rem;
-  }
-  
-  /* Map and Sidebar Layout */
-  .map-content {
-    display: flex;
-    flex: 1;
-    position: relative;
-  }
-  
-  #map {
-    flex-grow: 1;
-    height: 100%;
-  }
-  
-  /* Sidebar Styling */
-  .sidebar {
-    position: absolute;
-    right: -300px;
-    top: 0;
-    height: 100%;
-    width: 300px;
-    background-color: #ffffff;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-    transition: right 0.3s ease-in-out;
-    z-index: 10;
-    padding: 20px;
-    overflow-y: auto;
-  }
-  
-  .sidebar.open {
-    right: 0;
-  }
-  
-  .sidebar-content {
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-  
-  .sidebar-content h4 {
-    margin: 0 0 10px;
-    font-size: 1.2rem;
-    color: #333;
-  }
-  
-  .sidebar-content p {
-    margin: 5px 0;
-    font-size: 0.85rem;
-  }
-  
-  .close-button {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 1.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #888;
-  }
-  
-  .close-button:hover {
-    color: #000;
-  }
-  
-  /* Footer Styling */
-  .map-footer {
-    background-color: #343a40;
-    color: #ffffff;
-    padding: 10px;
-    text-align: center;
-    font-size: 0.9rem;
-  }
-  
+/* Header Styling */
+.map-header {
+  background-color: #343a40;
+  color: #ffffff;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  position: absolute; /* Make header absolute */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000; /* Header is on a lower layer than the sidebar */
+}
+
+.map-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.map-header p {
+  margin: 5px 0 0;
+  font-size: 1rem;
+}
+
+/* Map Container */
+.map-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+  margin: 0;
+}
+
+/* Map Content */
+.map-content {
+  display: flex;
+  flex: 1;
+  position: relative;
+  margin-top: 60px; /* Push the map below the header's height (15px padding + ~45px text area) */
+  margin-bottom: 40px; /* If you want space for the footer at bottom */
+  overflow: hidden;
+}
+
+#map {
+  flex-grow: 1;
+  height: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+  position: absolute;
+  top: 0;           /* Start at top */
+  bottom: 0;        /* Extend to bottom */
+  right: -300px;
+  width: 300px;
+  background-color: #ffffff;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+  transition: right 0.3s ease-in-out;
+  z-index: 2000;    /* Higher than header/footer (1000) */
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.sidebar.open {
+  right: 0;
+}
+
+/* Sidebar Content */
+.sidebar-content {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.sidebar-content h4 {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.sidebar-content p {
+  margin: 5px 0;
+  font-size: 0.85rem;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+}
+
+.close-button:hover {
+  color: #000;
+}
+
+/* Footer */
+.map-footer {
+  background-color: #343a40;
+  color: #ffffff;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.9rem;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000; /* Same layer as header, below sidebar (2000) */
+}
