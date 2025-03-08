@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import proj4 from "proj4";
 import "./Map.css";
 
-mapboxgl.accessToken = "";
+mapboxgl.accessToken = "pk.eyJ1Ijoia2V2aW5jb2wiLCJhIjoiY20zazJ2dTF2MDhqNDJzcGVwdm1rbnlkYyJ9.cVBc9ZK9hR92V6o3vDWz5g";
 
 const WGS84 = "EPSG:4326"; // WGS84 (Longitude, Latitude)
 const IRISH_GRID = "EPSG:29903";
@@ -149,6 +149,18 @@ const Map = () => {
           ) : sidebarData ? (
             <div className="sidebar-content">
               <h4>Field Information</h4>
+              {sidebarData.cluster_prediction !== undefined ? (
+                <div>
+                  <h5>Cluster Prediction</h5>
+                  <p><strong>Predicted Cluster:</strong> {sidebarData.cluster_prediction}</p>
+                </div>
+              ) : sidebarData.cluster_prediction_error ? (
+                <div>
+                  <h5>Cluster Prediction</h5>
+                  <p className="error">{sidebarData.cluster_prediction_error}</p>
+                </div>
+              ) : null}
+              <hr />
               <p><strong>Longitude:</strong> {sidebarData.longitude}</p>
               <p><strong>Latitude:</strong> {sidebarData.latitude}</p>
               <p><strong>Easting:</strong> {sidebarData.easting}</p>
@@ -195,18 +207,6 @@ const Map = () => {
               ) : (
                 <p>No rainfall data available.</p>
               )}
-              <hr />
-              {sidebarData.cluster_prediction !== undefined ? (
-                <div>
-                  <h5>Cluster Prediction</h5>
-                  <p><strong>Predicted Cluster:</strong> {sidebarData.cluster_prediction}</p>
-                </div>
-              ) : sidebarData.cluster_prediction_error ? (
-                <div>
-                  <h5>Cluster Prediction</h5>
-                  <p className="error">{sidebarData.cluster_prediction_error}</p>
-                </div>
-              ) : null}
             </div>
           ) : (
             <p>No data available. Click a field to fetch data.</p>
