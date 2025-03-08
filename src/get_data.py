@@ -15,6 +15,7 @@ DB_CONFIG = {
 
 transformer = Transformer.from_crs("EPSG:29903", "EPSG:2157", always_xy=True)
 
+
 def is_within_boundary(easting, northing):
     """Check if the given point is within the boundary in the GeoPackage."""
     try:
@@ -48,6 +49,7 @@ def is_within_boundary(easting, northing):
         if conn:
             cursor.close()
             conn.close()
+
 
 def query_database(table_name, easting, northing):
     """Query the database for the closest point in the specified table."""
@@ -130,6 +132,7 @@ def query_database(table_name, easting, northing):
             cursor.close()
             conn.close()
 
+
 def get_combined_data(easting, northing):
     # Check if the point is within the boundary
     province = is_within_boundary(easting, northing)
@@ -156,6 +159,7 @@ def get_combined_data(easting, northing):
     }
     return result
 
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print(json.dumps({"error": "Provide easting and northing as arguments"}))
@@ -166,7 +170,7 @@ if __name__ == "__main__":
         northing = float(sys.argv[2])
 
         data = get_combined_data(easting, northing)
-        
+
         # Only attempt prediction if data retrieval was successful
         if "error" not in data:
             try:
@@ -175,43 +179,39 @@ if __name__ == "__main__":
                 hydrology_encoder = joblib.load("./models/hydrology_encoder.pkl")
                 scaler = joblib.load("./models/scaler.pkl")
                 classifier = joblib.load("./models/best_cluster_classifier.pkl")
-                
-                # Extract features:
-                # Using TEXTURE from soil_data, Elevation from elevation_data,
-                # ANN from rainfall_data, and CATEGORY from hydrology_data.
-                # (If you need to use a different soil texture field, consider switching to "Texture_Su".)
+
                 texture = data.get("soil_data", {}).get("TEXTURE")
                 elevation = data.get("elevation_data", {}).get("Elevation")
                 annual_rainfall = data.get("rainfall_data", {}).get("ANN")
                 hydrology_category = data.get("hydrology_data", {}).get("CATEGORY")
-                
+
                 # Check that all required features are present
                 if None not in (texture, elevation, annual_rainfall, hydrology_category):
                     # Convert numeric fields to float
                     elevation = float(elevation)
                     annual_rainfall = float(annual_rainfall)
-                    
+
                     # Encode categorical features using the saved encoders
                     texture_encoded = texture_encoder.transform([texture])[0]
                     hydrology_encoded = hydrology_encoder.transform([hydrology_category])[0]
-                    
+
                     # Construct feature vector in the same order as training:
                     # [Texture, Elevation, Annual_Rainfall, Hydrology_Category]
                     feature_vector = [texture_encoded, elevation, annual_rainfall, hydrology_encoded]
-                    
+
                     # Standardise the feature vector
                     feature_vector_scaled = scaler.transform([feature_vector])
-                    
+
                     # Get the cluster prediction
                     predicted_cluster = classifier.predict(feature_vector_scaled)[0]
-                    
+
                     # Add the prediction to the output
                     data["cluster_prediction"] = int(predicted_cluster)
                 else:
                     data["cluster_prediction_error"] = "Missing one or more required feature values"
             except Exception as e:
                 data["cluster_prediction_error"] = str(e)
-        
+
         print(json.dumps(data))
     except Exception as e:
         print(json.dumps({"error": str(e)}))
