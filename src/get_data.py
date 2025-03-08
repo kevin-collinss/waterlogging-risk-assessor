@@ -21,6 +21,7 @@ def is_within_boundary(easting, northing):
         # Transform coordinates from EPSG:29903 to EPSG:2157
         transformed_easting, transformed_northing = transformer.transform(easting, northing)
 
+
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
 
