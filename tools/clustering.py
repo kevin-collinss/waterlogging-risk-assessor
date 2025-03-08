@@ -25,14 +25,13 @@ for col in ["Texture", "Hydrology_Category"]:
     label_encoders[col] = le  # Store encoders for potential future use
 
 # Standardise numerical data
-scaler = StandardScaler()
 df_scaled = df.copy()
-df_scaled[["Elevation", "Annual_Rainfall"]] = scaler.fit_transform(df_scaled[["Elevation", "Annual_Rainfall"]])
+df_scaled[["Elevation", "Annual_Rainfall"]] = StandardScaler().fit_transform(df_scaled[["Elevation", "Annual_Rainfall"]])
 
 # Prepare features for clustering
 X = df_scaled[columns_to_use]
 
-# **Plot Dendrogram to Find Optimal Clusters**
+# Plot Dendrogram to Find Optimal Clusters
 plt.figure(figsize=(10, 5))
 sch.dendrogram(sch.linkage(X, method="ward"))
 plt.title("Dendrogram for Agglomerative Clustering")
@@ -41,17 +40,17 @@ plt.ylabel("Euclidean Distance")
 plt.savefig("../images/dendrogram.png")
 plt.show()
 
-# **Apply Agglomerative Clustering (Using Optimal Number of Clusters from Dendrogram)**
-n_clusters = 5 # Adjust based on dendrogram
+# Apply Agglomerative Clustering (Using Optimal Number of Clusters from Dendrogram)
+n_clusters = 5  # Adjust based on dendrogram
 agg_clustering = AgglomerativeClustering(n_clusters=n_clusters)
 df["Cluster"] = agg_clustering.fit_predict(X)
 
-# **Apply t-SNE for visualization**
+# Apply t-SNE for visualization
 tsne = TSNE(n_components=2, perplexity=30, random_state=42)
 df_tsne = pd.DataFrame(tsne.fit_transform(X), columns=["tSNE1", "tSNE2"])
 df_tsne["Cluster"] = df["Cluster"]
 
-# **Plot t-SNE Scatterplot of Agglomerative Clusters**
+# Plot t-SNE Scatterplot of Agglomerative Clusters
 plt.figure(figsize=(8, 6))
 sns.scatterplot(data=df_tsne, x="tSNE1", y="tSNE2", hue="Cluster", palette="viridis", s=100)
 plt.title("Clusters Visualised with t-SNE (Agglomerative Clustering)")
@@ -61,7 +60,7 @@ plt.legend(title="Cluster")
 plt.savefig("../images/clusters_tsne_agg.png")
 plt.show()
 
-# **Compute and Plot Silhouette Scores**
+# Compute and Plot Silhouette Scores
 silhouette_avg = silhouette_score(X, df["Cluster"])
 silhouette_vals = silhouette_samples(X, df["Cluster"])
 
@@ -84,9 +83,13 @@ plt.savefig("../images/silhouette_plot.png")
 plt.show()
 
 print(f"Average Silhouette Score: {silhouette_avg:.4f}")
-# **Save the Clustered Data**
 
-# **Save the Clustered Data**
+# --- Unencode categorical features before saving ---
+for col in ["Texture", "Hydrology_Category"]:
+    le = label_encoders[col]
+    df[col] = le.inverse_transform(df[col])
+
+# Save the Clustered Data
 output_file_path = "../data/training_data_with_clusters.csv"
 df.to_csv(output_file_path, index=False)
 print(f"Clustered data saved to {output_file_path}")
