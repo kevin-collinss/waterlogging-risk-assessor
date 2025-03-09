@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import proj4 from "proj4";
 import "./Map.css";
+import { Link } from 'react-router-dom';
+
 
 mapboxgl.accessToken =
   "pk.eyJ1Ijoia2V2aW5jb2wiLCJhIjoiY20zazJ2dTF2MDhqNDJzcGVwdm1rbnlkYyJ9.cVBc9ZK9hR92V6o3vDWz5g";
@@ -141,10 +143,10 @@ const Map = () => {
   return (
     <div className="map-container">
       <header className="map-header">
-        <div className="header-left">
-          <a href="/about" className="header-about-link">
-            About
-          </a>
+      <div className="header-left">
+          <Link to="/tech-breakdown" className="header-about-link">
+            Tech Breakdown
+          </Link>
         </div>
         <div className="header-center">
           <img
