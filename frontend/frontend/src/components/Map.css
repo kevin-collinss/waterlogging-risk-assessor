@@ -1,103 +1,163 @@
-/* General Styling */
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #f8f9fa;
-  }
-  
-  .map-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-  
-  /* Header Styling */
-  .map-header {
-    background-color: #343a40;
-    color: #ffffff;
-    padding: 15px;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  }
-  
-  .map-header h1 {
-    margin: 0;
-    font-size: 1.8rem;
-  }
-  
-  .map-header p {
-    margin: 5px 0 0;
-    font-size: 1rem;
-  }
-  
-  /* Map and Sidebar Layout */
-  .map-content {
-    display: flex;
-    flex: 1;
-    position: relative;
-  }
-  
-  #map {
-    flex-grow: 1;
-    height: 100%;
-  }
-  
-  /* Sidebar Styling */
-  .sidebar {
-    position: absolute;
-    right: -300px;
-    top: 0;
-    height: 100%;
-    width: 300px;
-    background-color: #ffffff;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-    transition: right 0.3s ease-in-out;
-    z-index: 10;
-    padding: 20px;
-    overflow-y: auto;
-  }
-  
-  .sidebar.open {
-    right: 0;
-  }
-  
-  .sidebar-content {
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-  
-  .sidebar-content h4 {
-    margin: 0 0 10px;
-    font-size: 1.2rem;
-    color: #333;
-  }
-  
-  .sidebar-content p {
-    margin: 5px 0;
-    font-size: 0.85rem;
-  }
-  
-  .close-button {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 1.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #888;
-  }
-  
-  .close-button:hover {
-    color: #000;
-  }
-  
-  /* Footer Styling */
-  .map-footer {
-    background-color: #343a40;
-    color: #ffffff;
-    padding: 10px;
-    text-align: center;
-    font-size: 0.9rem;
-  }
-  
+  font-family: 'Montserrat', sans-serif;
+}
+
+.map-header {
+  background: #8e704d;             /* Main color */
+  color: #ffffff;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ffffff; /* Thin white line */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Left, center, right containers */
+.header-left,
+.header-right {
+  flex: 1;
+}
+
+.header-center {
+  flex: 1;
+  text-align: center;
+}
+
+/* About link styling */
+.header-about-link {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.header-about-link:hover {
+  text-decoration: underline;
+}
+
+/* Logo styling */
+.header-logo {
+  max-width: 300px;
+  height: auto;
+  display: inline-block;
+}
+
+/* Map Container */
+.map-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+  margin: 0;
+}
+
+/* Map Content */
+.map-content {
+  display: flex;
+  flex: 1;
+  position: relative;
+  margin-top: 60px;
+  margin-bottom: 40px;
+  overflow: hidden;
+}
+
+#map {
+  flex-grow: 1;
+  height: 100%;
+}
+
+.sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -300px;
+  width: 300px;
+  background-color: #ffffff;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  overflow-y: auto;
+  transition: right 0.3s ease-in-out;
+  z-index: 2000;
+}
+
+.sidebar.open {
+  right: 0;
+}
+
+/* Sidebar Content */
+.sidebar-content {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #333;
+  text-align: left;  /* Ensures content is left-aligned */
+}
+
+.sidebar-content h4,
+.sidebar-content h5 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.sidebar-content p {
+  margin: 5px 0;
+  font-size: 0.85rem;
+}
+
+.cluster-prediction {
+  background-color: #e6f7ff;   /* light blue background */
+  border: 2px solid #1890ff;   /* blue border */
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.cluster-prediction h5 {
+  margin: 0 0 10px;
+  color: #0050b3;
+}
+
+
+/* Close Button at top-right */
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;      /* Move to top-right corner */
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  z-index: 9999;    /* Ensure it's on top of other elements */
+}
+
+.close-button:hover {
+  color: #000;
+}
+
+
+/* Footer */
+.map-footer {
+  background-color: #8e704d;
+  color: #ffffff;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.9rem;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  border-top: 1px solid #ffffff; /* Thin white line on top */
+}
