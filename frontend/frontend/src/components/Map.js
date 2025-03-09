@@ -47,8 +47,8 @@ const Map = () => {
           [-7.6921, 53.1424],
           [-7.6911, 53.1424],
           [-7.6911, 53.1414],
-          [-7.6921, 53.1414]
-        ]
+          [-7.6921, 53.1414],
+        ],
       });
       // Add a raster layer to display the image source.
       map.addLayer({
@@ -99,7 +99,7 @@ const Map = () => {
     const updateStampImageCoordinates = (lng, lat) => {
       // Convert the clicked coordinate from WGS84 to IRISH_GRID (meters)
       const [easting, northing] = proj4(WGS84, IRISH_GRID, [lng, lat]);
-      const halfSize = 50; 
+      const halfSize = 50;
       // Calculate the four corners in IRISH_GRID (meters)
       const topLeftMeters = [easting - halfSize, northing + halfSize];
       const topRightMeters = [easting + halfSize, northing + halfSize];
@@ -147,7 +147,10 @@ const Map = () => {
       <div className="map-content">
         <div id="map"></div>
         <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-          <button className="close-button" onClick={() => setIsSidebarOpen(false)}>
+          <button
+            className="close-button"
+            onClick={() => setIsSidebarOpen(false)}
+          >
             &times;
           </button>
           {loading ? (
@@ -158,30 +161,45 @@ const Map = () => {
             <div className="sidebar-content">
               <h4>Field Information</h4>
               {sidebarData.cluster_prediction !== undefined ? (
-  <div className="cluster-prediction">
-    <h5>Cluster Prediction</h5>
-    <p>
-      <strong>Predicted Cluster:</strong> {sidebarData.cluster_prediction}
-    </p>
-  </div>
-) : sidebarData.cluster_prediction_error ? (
-  <div className="cluster-prediction error">
-    <h5>Cluster Prediction</h5>
-    <p>{sidebarData.cluster_prediction_error}</p>
-  </div>
-) : null}
+                <div className="cluster-prediction">
+                  <h5>Cluster Prediction</h5>
+                  <p>
+                    <strong>Predicted Cluster:</strong>{" "}
+                    {sidebarData.cluster_prediction}
+                  </p>
+                </div>
+              ) : sidebarData.cluster_prediction_error ? (
+                <div className="cluster-prediction error">
+                  <h5>Cluster Prediction</h5>
+                  <p>{sidebarData.cluster_prediction_error}</p>
+                </div>
+              ) : null}
               <hr />
-              <p><strong>Longitude:</strong> {sidebarData.longitude}</p>
-              <p><strong>Latitude:</strong> {sidebarData.latitude}</p>
-              <p><strong>Easting:</strong> {sidebarData.easting}</p>
-              <p><strong>Northing:</strong> {sidebarData.northing}</p>
+              <p>
+                <strong>Longitude:</strong> {sidebarData.longitude}
+              </p>
+              <p>
+                <strong>Latitude:</strong> {sidebarData.latitude}
+              </p>
+              <p>
+                <strong>Easting:</strong> {sidebarData.easting}
+              </p>
+              <p>
+                <strong>Northing:</strong> {sidebarData.northing}
+              </p>
               <hr />
               <h5>Soil Data</h5>
               {sidebarData.soil ? (
                 <>
-                  <p><strong>Texture:</strong> {sidebarData.soil.Texture_Su}</p>
-                  <p><strong>Depth:</strong> {sidebarData.soil.DEPTH}</p>
-                  <p><strong>Description:</strong> {sidebarData.soil.PlainEngli}</p>
+                  <p>
+                    <strong>Texture:</strong> {sidebarData.soil.Texture_Su}
+                  </p>
+                  <p>
+                    <strong>Depth:</strong> {sidebarData.soil.DEPTH}
+                  </p>
+                  <p>
+                    <strong>Description:</strong> {sidebarData.soil.PlainEngli}
+                  </p>
                 </>
               ) : (
                 <p>No soil data available.</p>
@@ -190,9 +208,17 @@ const Map = () => {
               <h5>Hydrology Data</h5>
               {sidebarData.hydrology ? (
                 <>
-                  <p><strong>Category:</strong> {sidebarData.hydrology.CATEGORY}</p>
-                  <p><strong>Material Description:</strong> {sidebarData.hydrology.ParMat_Des}</p>
-                  <p><strong>Drainage:</strong> {sidebarData.hydrology.SoilDraina}</p>
+                  <p>
+                    <strong>Category:</strong> {sidebarData.hydrology.CATEGORY}
+                  </p>
+                  <p>
+                    <strong>Material Description:</strong>{" "}
+                    {sidebarData.hydrology.ParMat_Des}
+                  </p>
+                  <p>
+                    <strong>Drainage:</strong>{" "}
+                    {sidebarData.hydrology.SoilDraina}
+                  </p>
                 </>
               ) : (
                 <p>No hydrology data available.</p>
@@ -200,7 +226,10 @@ const Map = () => {
               <hr />
               <h5>Elevation</h5>
               {sidebarData.elevation ? (
-                <p><strong>Elevation:</strong> {sidebarData.elevation.Elevation} m</p>
+                <p>
+                  <strong>Elevation:</strong> {sidebarData.elevation.Elevation}{" "}
+                  m
+                </p>
               ) : (
                 <p>No elevation data available.</p>
               )}
@@ -208,11 +237,21 @@ const Map = () => {
               <h5>Rainfall</h5>
               {sidebarData.rainfall ? (
                 <>
-                  <p><strong>Annual:</strong> {sidebarData.rainfall.ANN} mm</p>
-                  <p><strong>Winter:</strong> {sidebarData.rainfall.DJF} mm</p>
-                  <p><strong>Spring:</strong> {sidebarData.rainfall.MAM} mm</p>
-                  <p><strong>Summer:</strong> {sidebarData.rainfall.JJA} mm</p>
-                  <p><strong>Autumn:</strong> {sidebarData.rainfall.SON} mm</p>
+                  <p>
+                    <strong>Annual:</strong> {sidebarData.rainfall.ANN} mm
+                  </p>
+                  <p>
+                    <strong>Winter:</strong> {sidebarData.rainfall.DJF} mm
+                  </p>
+                  <p>
+                    <strong>Spring:</strong> {sidebarData.rainfall.MAM} mm
+                  </p>
+                  <p>
+                    <strong>Summer:</strong> {sidebarData.rainfall.JJA} mm
+                  </p>
+                  <p>
+                    <strong>Autumn:</strong> {sidebarData.rainfall.SON} mm
+                  </p>
                 </>
               ) : (
                 <p>No rainfall data available.</p>
