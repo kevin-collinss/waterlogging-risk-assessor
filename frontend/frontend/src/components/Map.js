@@ -141,9 +141,21 @@ const Map = () => {
   return (
     <div className="map-container">
       <header className="map-header">
-        <h1>Flood Risk Classifier</h1>
-        <p>Click on your field to classify flood risk.</p>
+        <div className="header-left">
+          <a href="/about" className="header-about-link">
+            About
+          </a>
+        </div>
+        <div className="header-center">
+          <img
+            src="/images/waterlogging_logo.png"
+            alt="Waterlogging Logo"
+            className="header-logo"
+          />
+        </div>
+        <div className="header-right"></div>
       </header>
+
       <div className="map-content">
         <div id="map"></div>
         <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
