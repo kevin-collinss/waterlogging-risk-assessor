@@ -158,18 +158,18 @@ const Map = () => {
             <div className="sidebar-content">
               <h4>Field Information</h4>
               {sidebarData.cluster_prediction !== undefined ? (
-                <div>
-                  <h5>Cluster Prediction</h5>
-                  <p>
-                    <strong>Predicted Cluster:</strong> {sidebarData.cluster_prediction}
-                  </p>
-                </div>
-              ) : sidebarData.cluster_prediction_error ? (
-                <div>
-                  <h5>Cluster Prediction</h5>
-                  <p className="error">{sidebarData.cluster_prediction_error}</p>
-                </div>
-              ) : null}
+  <div className="cluster-prediction">
+    <h5>Cluster Prediction</h5>
+    <p>
+      <strong>Predicted Cluster:</strong> {sidebarData.cluster_prediction}
+    </p>
+  </div>
+) : sidebarData.cluster_prediction_error ? (
+  <div className="cluster-prediction error">
+    <h5>Cluster Prediction</h5>
+    <p>{sidebarData.cluster_prediction_error}</p>
+  </div>
+) : null}
               <hr />
               <p><strong>Longitude:</strong> {sidebarData.longitude}</p>
               <p><strong>Latitude:</strong> {sidebarData.latitude}</p>
