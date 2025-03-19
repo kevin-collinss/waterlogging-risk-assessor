@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import proj4 from "proj4";
 import "./Map.css";
-import { Link } from 'react-router-dom';
-
+import { Link } from "react-router-dom";
 
 mapboxgl.accessToken =
-  "pk.eyJ1Ijoia2V2aW5jb2wiLCJhIjoiY20zazJ2dTF2MDhqNDJzcGVwdm1rbnlkYyJ9.cVBc9ZK9hR92V6o3vDWz5g";
+  "";
 
 const WGS84 = "EPSG:4326"; // WGS84 (Longitude, Latitude)
 const IRISH_GRID = "EPSG:29903";
@@ -17,6 +16,14 @@ proj4.defs(
   "+proj=tmerc +lat_0=53.5 +lon_0=-8 +k=1.000035 +x_0=200000 +y_0=250000 +ellps=airy +units=m +no_defs"
 );
 
+// Map each cluster number to its waterlogging risk
+const clusterRiskMap = {
+  0: "Low",
+  1: "Moderate to High",
+  2: "Moderate",
+  3: "Low to Moderate",
+};
+
 const Map = () => {
   const [sidebarData, setSidebarData] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -24,7 +31,6 @@ const Map = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Initialize the map with a flat, north-up view:
     const map = new mapboxgl.Map({
       container: "map",
       style: "mapbox://styles/mapbox/satellite-streets-v11",
@@ -34,14 +40,10 @@ const Map = () => {
       bearing: 0,
     });
 
-    // Disable rotation (for a pure overhead view)
     map.dragRotate.disable();
     map.touchZoomRotate.disableRotation();
 
-    // When the map loads, add an image source for the stamp.
-    // Initially, we set dummy coordinates.
     map.on("load", () => {
-      // Add the image source. Ensure the image exists at public/images/soil_gathering.png
       map.addSource("stamp-source", {
         type: "image",
         url: "/images/soil_gathering_circle.png",
@@ -52,18 +54,15 @@ const Map = () => {
           [-7.6921, 53.1414],
         ],
       });
-      // Add a raster layer to display the image source.
       map.addLayer({
         id: "stamp-layer",
         type: "raster",
         source: "stamp-source",
-        paint: {
-          "raster-opacity": 1,
-        },
+        paint: { "raster-opacity": 1 },
       });
     });
 
-    // Function to fetch field data from your backend.
+    // Function to fetch field data from backend.
     const handleFieldClick = async (easting, northing, lng, lat) => {
       setLoading(true);
       setError(null);
@@ -73,8 +72,9 @@ const Map = () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ easting, northing }),
         });
-        if (!response.ok)
+        if (!response.ok) {
           throw new Error(`Error fetching data: ${response.statusText}`);
+        }
         const data = await response.json();
         setSidebarData({
           longitude: lng.toFixed(4),
@@ -87,6 +87,7 @@ const Map = () => {
           rainfall: data.rainfall_data || null,
           cluster_prediction: data.cluster_prediction,
           cluster_prediction_error: data.cluster_prediction_error,
+          debug: data.debug || null,
         });
       } catch (err) {
         setError("Failed to fetch data. Please try again.");
@@ -95,42 +96,29 @@ const Map = () => {
       }
     };
 
-    // This function computes the 50m square corners around the clicked point.
-    // It converts the clicked point (WGS84) to IRISH_GRID, subtracts and adds 25m,
-    // then converts the resulting corners back to WGS84.
     const updateStampImageCoordinates = (lng, lat) => {
-      // Convert the clicked coordinate from WGS84 to IRISH_GRID (meters)
       const [easting, northing] = proj4(WGS84, IRISH_GRID, [lng, lat]);
       const halfSize = 50;
-      // Calculate the four corners in IRISH_GRID (meters)
       const topLeftMeters = [easting - halfSize, northing + halfSize];
       const topRightMeters = [easting + halfSize, northing + halfSize];
       const bottomRightMeters = [easting + halfSize, northing - halfSize];
       const bottomLeftMeters = [easting - halfSize, northing - halfSize];
 
-      // Convert each corner back to WGS84 (lng, lat)
       const tl = proj4(IRISH_GRID, WGS84, topLeftMeters);
       const tr = proj4(IRISH_GRID, WGS84, topRightMeters);
       const br = proj4(IRISH_GRID, WGS84, bottomRightMeters);
       const bl = proj4(IRISH_GRID, WGS84, bottomLeftMeters);
 
-      // Coordinates must be in the order: top-left, top-right, bottom-right, bottom-left.
       const newCoordinates = [tl, tr, br, bl];
-
-      // Update the image source's coordinates.
       const stampSource = map.getSource("stamp-source");
       if (stampSource) {
         stampSource.setCoordinates(newCoordinates);
       }
     };
 
-    // When the map is clicked:
     map.on("click", (e) => {
       const { lng, lat } = e.lngLat;
-      // Update the stamp image to cover a 50m square centered at the click point.
       updateStampImageCoordinates(lng, lat);
-
-      // Convert the clicked point for backend query.
       const [easting, northing] = proj4(WGS84, IRISH_GRID, [lng, lat]);
       handleFieldClick(easting, northing, lng, lat);
       setIsSidebarOpen(true);
@@ -143,7 +131,7 @@ const Map = () => {
   return (
     <div className="map-container">
       <header className="map-header">
-      <div className="header-left">
+        <div className="header-left">
           <Link to="/tech-breakdown" className="header-about-link">
             Tech Breakdown
           </Link>
@@ -180,6 +168,10 @@ const Map = () => {
                   <p>
                     <strong>Predicted Cluster:</strong>{" "}
                     {sidebarData.cluster_prediction}
+                  </p>
+                  <p>
+                    <strong>Waterlogging Risk:</strong>{" "}
+                    {clusterRiskMap[sidebarData.cluster_prediction] || "N/A"}
                   </p>
                 </div>
               ) : sidebarData.cluster_prediction_error ? (
@@ -241,8 +233,8 @@ const Map = () => {
               <h5>Elevation</h5>
               {sidebarData.elevation ? (
                 <p>
-                  <strong>Elevation:</strong> {sidebarData.elevation.Elevation}{" "}
-                  m
+                  <strong>Elevation:</strong>{" "}
+                  {sidebarData.elevation.Elevation} m
                 </p>
               ) : (
                 <p>No elevation data available.</p>
@@ -269,6 +261,13 @@ const Map = () => {
                 </>
               ) : (
                 <p>No rainfall data available.</p>
+              )}
+              {sidebarData.debug && (
+                <>
+                  <hr />
+                  <h5>Debug Logs</h5>
+                  <pre>{sidebarData.debug.join("\n")}</pre>
+                </>
               )}
             </div>
           ) : (
