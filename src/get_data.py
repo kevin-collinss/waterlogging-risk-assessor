@@ -86,7 +86,6 @@ def query_database(table_name, easting, northing):
         result = cursor.fetchone()
         if not result:
             return None
-
         if table_name == "soil_data":
             return {
                 "Texture_Su": result[1],
@@ -128,12 +127,10 @@ def get_combined_data(easting, northing):
     province = is_within_boundary(easting, northing)
     if not province:
         return {"error": "Point is outside the defined boundary"}
-
     soil_data = query_database("soil_data", easting, northing)
     hydrology_data = query_database("hydrology_data", easting, northing)
     elevation_data = query_database("elevation_data", easting, northing)
     rainfall_data = query_database("rainfall_data", easting, northing)
-
     result = {
         "boundary_province": province,
         "soil_data": soil_data,
@@ -148,16 +145,14 @@ if __name__ == "__main__":
         output = {"error": "Provide easting and northing as arguments", "debug": debug_logs}
         print(json.dumps(output))
         sys.exit(1)
-
     try:
         easting = float(sys.argv[1])
         northing = float(sys.argv[2])
         data = get_combined_data(easting, northing)
         debug_logs.append("DEBUG: Entire data dictionary:\n" + json.dumps(data, indent=2))
-
         if "error" not in data:
             try:
-                # Attempt to use TEXTURE; if missing, use Texture_Su.
+                # Use TEXTURE if present; if not, fallback to Texture_Su.
                 let_texture = data.get("soil_data", {}).get("TEXTURE")
                 if not let_texture:
                     let_texture = data.get("soil_data", {}).get("Texture_Su")
@@ -165,12 +160,10 @@ if __name__ == "__main__":
                 elevation = data.get("elevation_data", {}).get("Elevation")
                 annual_rainfall = data.get("rainfall_data", {}).get("ANN")
                 hydrology_category = data.get("hydrology_data", {}).get("CATEGORY")
-
                 debug_logs.append(f"DEBUG: texture = {texture}")
                 debug_logs.append(f"DEBUG: elevation = {elevation}")
                 debug_logs.append(f"DEBUG: annual_rainfall = {annual_rainfall}")
                 debug_logs.append(f"DEBUG: hydrology_category = {hydrology_category}")
-
                 if None not in (texture, elevation, annual_rainfall, hydrology_category):
                     try:
                         elevation = float(elevation)
@@ -183,10 +176,8 @@ if __name__ == "__main__":
                         hydrology_encoder = joblib.load("./models/hydrology_encoder.pkl")
                         scaler = joblib.load("./models/scaler.pkl")
                         classifier = joblib.load("./models/best_cluster_classifier.pkl")
-
                         texture_encoded = texture_encoder.transform([texture])[0]
                         hydrology_encoded = hydrology_encoder.transform([hydrology_category])[0]
-
                         feature_vector = [texture_encoded, elevation, annual_rainfall, hydrology_encoded]
                         feature_vector_scaled = scaler.transform([feature_vector])
                         predicted_cluster = classifier.predict(feature_vector_scaled)[0]
@@ -198,8 +189,9 @@ if __name__ == "__main__":
             except Exception as e:
                 debug_logs.append("DEBUG: Exception during cluster prediction: " + str(e))
                 data["cluster_prediction_error"] = str(e)
-
-        data["debug"] = debug_logs
+        # Only add debug logs to output if there's an error
+        if "cluster_prediction_error" in data:
+            data["debug"] = debug_logs
         print(json.dumps(data))
     except Exception as e:
         print(json.dumps({"error": str(e), "debug": debug_logs}))
