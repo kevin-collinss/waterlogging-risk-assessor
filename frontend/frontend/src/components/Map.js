@@ -31,7 +31,6 @@ const Map = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Initialize the map with a flat, north-up view:
     const map = new mapboxgl.Map({
       container: "map",
       style: "mapbox://styles/mapbox/satellite-streets-v11",
@@ -41,11 +40,9 @@ const Map = () => {
       bearing: 0,
     });
 
-    // Disable rotation (for a pure overhead view)
     map.dragRotate.disable();
     map.touchZoomRotate.disableRotation();
 
-    // When the map loads, add an image source for the stamp.
     map.on("load", () => {
       map.addSource("stamp-source", {
         type: "image",
@@ -61,13 +58,11 @@ const Map = () => {
         id: "stamp-layer",
         type: "raster",
         source: "stamp-source",
-        paint: {
-          "raster-opacity": 1,
-        },
+        paint: { "raster-opacity": 1 },
       });
     });
 
-    // Function to fetch field data from your backend.
+    // Function to fetch field data from backend.
     const handleFieldClick = async (easting, northing, lng, lat) => {
       setLoading(true);
       setError(null);
@@ -92,6 +87,7 @@ const Map = () => {
           rainfall: data.rainfall_data || null,
           cluster_prediction: data.cluster_prediction,
           cluster_prediction_error: data.cluster_prediction_error,
+          debug: data.debug || null,
         });
       } catch (err) {
         setError("Failed to fetch data. Please try again.");
@@ -100,7 +96,6 @@ const Map = () => {
       }
     };
 
-    // This function computes the 50m square corners around the clicked point.
     const updateStampImageCoordinates = (lng, lat) => {
       const [easting, northing] = proj4(WGS84, IRISH_GRID, [lng, lat]);
       const halfSize = 50;
@@ -121,7 +116,6 @@ const Map = () => {
       }
     };
 
-    // When the map is clicked:
     map.on("click", (e) => {
       const { lng, lat } = e.lngLat;
       updateStampImageCoordinates(lng, lat);
@@ -177,10 +171,7 @@ const Map = () => {
                   </p>
                   <p>
                     <strong>Waterlogging Risk:</strong>{" "}
-                    {
-                      // If cluster_prediction is numeric, we can do a direct lookup
-                      clusterRiskMap[sidebarData.cluster_prediction] || "N/A"
-                    }
+                    {clusterRiskMap[sidebarData.cluster_prediction] || "N/A"}
                   </p>
                 </div>
               ) : sidebarData.cluster_prediction_error ? (
@@ -270,6 +261,13 @@ const Map = () => {
                 </>
               ) : (
                 <p>No rainfall data available.</p>
+              )}
+              {sidebarData.debug && (
+                <>
+                  <hr />
+                  <h5>Debug Logs</h5>
+                  <pre>{sidebarData.debug.join("\n")}</pre>
+                </>
               )}
             </div>
           ) : (
