@@ -18,11 +18,6 @@ body {
   justify-content: space-between;
 }
 
-/* Left, center, right containers */
-.header-left,
-.header-right {
-  flex: 1;
-}
 
 .header-center {
   flex: 1;
@@ -146,7 +141,6 @@ body {
   color: #000;
 }
 
-
 /* Footer */
 .map-footer {
   background-color: #8e704d;
@@ -161,6 +155,60 @@ body {
   z-index: 1000;
   border-top: 1px solid #ffffff; /* Thin white line on top */
 }
+
+.left-tabs {
+  position: absolute;
+  top: 120px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+}
+
+.tab-button.vertical {
+  writing-mode: vertical-lr;
+  transform: none;
+  padding: 10px 6px;
+  width: auto;
+  height: 200px;
+  font-size: 1.3rem;
+  border-radius: 0 6px 6px 0;
+  background-color: #ffffff; /* default: white */
+  color: #000000;
+  border: none;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s, color 0.3s;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.tab-button.vertical:hover {
+  background-color: #2b8cbe; /* waterlogging blue */
+  color: #ffffff; /* make text white on blue */
+}
+
+
+
+.left-sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -320px; /* start off-screen */
+  width: 300px;
+  background-color: #ffffff;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  overflow-y: auto;
+  transition: left 0.6s ease-in-out; /* <--- enables smooth slide */
+  z-index: 2000;
+}
+
+.left-sidebar.open {
+  left: 0;
+}
+
 
 .leaflet-header {
   padding: 15px 15px;
