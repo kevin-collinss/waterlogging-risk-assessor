@@ -15,7 +15,6 @@ warnings.filterwarnings("ignore")
 # Data Loading and Preprocessing
 # ------------------------------
 df = pd.read_csv("../data/training_data.csv")
-df = df.drop(columns=["Easting", "Northing"])
 df = df[~df["Hydrology_Category"].isin(["Water", "Made"])]
 
 # Save original hydrology strings before mapping

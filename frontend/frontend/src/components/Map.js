@@ -5,7 +5,7 @@ import "./Map.css";
 import { Link } from "react-router-dom";
 
 mapboxgl.accessToken =
-  "";
+  "pk.eyJ1Ijoia2V2aW5jb2wiLCJhIjoiY20zazJ2dTF2MDhqNDJzcGVwdm1rbnlkYyJ9.cVBc9ZK9hR92V6o3vDWz5g";
 
 const WGS84 = "EPSG:4326"; // WGS84 (Longitude, Latitude)
 const IRISH_GRID = "EPSG:29903";
@@ -135,6 +135,11 @@ const Map = () => {
           <Link to="/tech-breakdown" className="header-about-link">
             Tech Breakdown
           </Link>
+          <div className="header-left">
+  <Link to="/point-map" className="header-about-link" style={{ marginLeft: "20px" }}>
+    Cluster Map
+  </Link>
+</div>
         </div>
         <div className="header-center">
           <img

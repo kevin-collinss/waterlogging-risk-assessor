@@ -161,3 +161,12 @@ body {
   z-index: 1000;
   border-top: 1px solid #ffffff; /* Thin white line on top */
 }
+
+.leaflet-header {
+  padding: 15px 15px;
+}
+
+.leaflet-header .header-logo,
+.leaflet-header h2 {
+  font-size: 1.2rem;
+}
