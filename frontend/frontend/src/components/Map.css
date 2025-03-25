@@ -108,8 +108,6 @@ body {
 }
 
 .cluster-prediction {
-  background-color: #e6f7ff;   /* light blue background */
-  border: 2px solid #1890ff;   /* blue border */
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 15px;
@@ -163,6 +161,22 @@ body {
   display: flex;
   flex-direction: column;
   z-index: 1001;
+}
+.sidebar-button {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 14px;
+  background-color: #2b8cbe;         /* blue background */
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.sidebar-button:hover {
+  background-color: #1e6e97;         /* darker blue on hover */
 }
 
 .tab-button.vertical {

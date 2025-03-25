@@ -31,6 +31,13 @@ const Map = () => {
   const [error, setError] = useState(null);
   const [activeLeftTab, setActiveLeftTab] = useState(null);
 
+  const clusterColors = {
+    0: "#49006a", // Purple
+    1: "#2b8cbe", // Blue
+    2: "#41ae76", // Green
+    3: "#ffff33", // Yellow
+  };
+
   useEffect(() => {
     const map = new mapboxgl.Map({
       container: "map",
@@ -175,7 +182,17 @@ const Map = () => {
               <div className="sidebar-content">
                 <h4>Field Information</h4>
                 {sidebarData.cluster_prediction !== undefined ? (
-                  <div className="cluster-prediction">
+                  <div
+                    className="cluster-prediction"
+                    style={{
+                      backgroundColor: `${
+                        clusterColors[sidebarData.cluster_prediction]
+                      }20`,
+                      border: `2px solid ${
+                        clusterColors[sidebarData.cluster_prediction]
+                      }`,
+                    }}
+                  >
                     <h5>Cluster Prediction</h5>
                     <p>
                       <strong>Predicted Cluster:</strong>{" "}
@@ -318,8 +335,8 @@ const Map = () => {
               />
               <p>
                 {activeLeftTab === "data"
-                  ? "This visual shows where we sourced environmental data like rainfall, elevation, and hydrology."
-                  : "Read how we use machine learning and GIS tools to analyse agricultural flood risk."}
+                  ? "See where the data used to create the clusters are located in this interactive map. Visually see how areas trend towards certain clusters. There is a total of 10,000 data points across this map."
+                  : "Learn how machine learning and GIS technologies were used to analyse agricultural flood risk. Through iterative clustering techniques, we identified optimal spatial groupings—forming the basis of the classifier you’re using today."}
               </p>
 
               {activeLeftTab === "data" ? (

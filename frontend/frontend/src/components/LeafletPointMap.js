@@ -74,7 +74,7 @@ const LeafletPointMap = () => {
             <CircleMarker
               key={index}
               center={[point.lat, point.lng]}
-              radius={0.3}
+              radius={0.8}
               pathOptions={{
                 color: clusterColours[point.cluster] || "#888",
                 fillOpacity: 0.9,
