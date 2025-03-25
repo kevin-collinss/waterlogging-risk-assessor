@@ -48,14 +48,38 @@ const LeafletPointMap = () => {
 
   return (
     <div className="map-container">
-      <header className="map-header leaflet-header">
+      <header
+        className="map-header leaflet-header"
+        style={{
+          backgroundColor: "#8e704d",
+          backgroundImage: "url('/images/pipes.png')",
+          backgroundRepeat: "repeat",
+          backgroundSize: "auto",
+          backgroundBlendMode: "multiply",
+          color: "#ffffff",
+        }}
+      >
         <div className="header-left">
-          <Link to="/" className="header-about-link">← Back to Main Map</Link>
+          <Link to="/" className="back-button">
+            ← Back to Main Map
+          </Link>
         </div>
+
         <div className="header-center">
-          <h2 style={{ color: "white" }}>Cluster Map View</h2>
+          <img
+            src="/images/waterlogging_logo.png"
+            alt="Waterlogging Logo"
+            className="header-logo"
+          />
         </div>
-        <div className="header-right" />
+
+        <div className="header-right">
+          <h2
+            style={{ color: "white", textAlign: "right", marginRight: "15px" }}
+          >
+            Cluster Map View
+          </h2>
+        </div>
       </header>
 
       <div className="map-content">
@@ -84,8 +108,21 @@ const LeafletPointMap = () => {
         </MapContainer>
       </div>
 
-      <footer className="map-footer">
-        <p>Cluster visualisation via Leaflet | Irish Transverse Mercator Projection</p>
+      <footer
+        className="map-footer"
+        style={{
+          backgroundColor: "#8e704d",
+          backgroundImage: "url('/images/pipes.png')",
+          backgroundRepeat: "repeat",
+          backgroundSize: "auto",
+          backgroundBlendMode: "multiply",
+          color: "#ffffff",
+        }}
+      >
+        <p>
+          Cluster visualisation via Leaflet | Irish Transverse Mercator
+          Projection
+        </p>
       </footer>
     </div>
   );

@@ -38,6 +38,16 @@ const Map = () => {
     3: "#ffff33", // Yellow
   };
 
+  const headerStyle = {
+    backgroundColor: "#8e704d",
+    backgroundImage: "url('/images/geometric-leaves.png')",
+    backgroundRepeat: "repeat",
+    backgroundSize: "auto",
+    backgroundBlendMode: "multiply",
+    color: "#ffffff"
+  };
+  
+
   useEffect(() => {
     const map = new mapboxgl.Map({
       container: "map",
@@ -138,7 +148,7 @@ const Map = () => {
 
   return (
     <div className="map-container">
-      <header className="map-header">
+      <header className="map-header" style={headerStyle}>
         <div className="header-center">
           <img
             src="/images/waterlogging_logo.png"
@@ -318,7 +328,7 @@ const Map = () => {
               <h4>
                 {activeLeftTab === "data"
                   ? "Where the Data Comes From"
-                  : "Our Tech Breakdown"}
+                  : "Tech Breakdown"}
               </h4>
               <img
                 src={
@@ -352,7 +362,7 @@ const Map = () => {
           </div>
         )}
       </div>
-      <footer className="map-footer">
+      <footer className="map-footer" style={headerStyle}>
         <p>Powered by Mapbox | Irish Transverse Mercator Projection</p>
       </footer>
     </div>
