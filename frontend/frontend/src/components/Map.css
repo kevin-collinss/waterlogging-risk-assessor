@@ -317,3 +317,20 @@ body {
 .home-start-button:hover {
   background-color: #1e6e97;
 }
+
+.fixed-back-button {
+  position: fixed;
+  top: 20px; /* Adjust as needed */
+  left: 20px; /* Adjust as needed */
+  background-color: #1e6e97; /* Match the theme */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  z-index: 1000;
+}
+
+.fixed-back-button:hover {
+  background-color: #1e6e97; /* Darker shade on hover */
+}

@@ -15,9 +15,10 @@ const TechBreakdown = () => {
 
   return (
     <div style={{ padding: '40px' }}>
-      <Link to="/map" className="home-start-button">
-  ← Back to Map
-</Link>
+      {/* Fixed Back to Map Button */}
+      <Link to="/map" className="fixed-back-button">
+        ← Back to Map
+      </Link>
 
       <div className="markdown-body" style={{ marginTop: '20px' }}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
