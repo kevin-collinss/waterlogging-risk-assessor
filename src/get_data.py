@@ -18,6 +18,7 @@ DB_CONFIG = {
 
 transformer = Transformer.from_crs("EPSG:29903", "EPSG:2157", always_xy=True)
 
+
 def is_within_boundary(easting, northing):
     """Check if the given point is within the boundary in the GeoPackage."""
     conn = None
@@ -43,6 +44,7 @@ def is_within_boundary(easting, northing):
         if conn:
             cursor.close()
             conn.close()
+
 
 def query_database(table_name, easting, northing):
     """Query the database for the closest point in the specified table."""
@@ -124,6 +126,7 @@ def query_database(table_name, easting, northing):
             cursor.close()
             conn.close()
 
+
 def get_combined_data(easting, northing):
     """Retrieve all relevant data for a given coordinate."""
     province = is_within_boundary(easting, northing)
@@ -143,6 +146,7 @@ def get_combined_data(easting, northing):
         "rainfall_data": rainfall_data,
     }
     return result
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
