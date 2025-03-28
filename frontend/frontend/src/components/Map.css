@@ -3,7 +3,7 @@ body {
 }
 
 .map-header {
-  background: #8e704d;             /* Main color */
+  background: #8e704d; 
   color: #ffffff;
   padding: 15px 20px;
   border-bottom: 1px solid #ffffff; /* Thin white line */
@@ -18,11 +18,6 @@ body {
   justify-content: space-between;
 }
 
-/* Left, center, right containers */
-.header-left,
-.header-right {
-  flex: 1;
-}
 
 .header-center {
   flex: 1;
@@ -113,8 +108,6 @@ body {
 }
 
 .cluster-prediction {
-  background-color: #e6f7ff;   /* light blue background */
-  border: 2px solid #1890ff;   /* blue border */
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 15px;
@@ -146,7 +139,6 @@ body {
   color: #000;
 }
 
-
 /* Footer */
 .map-footer {
   background-color: #8e704d;
@@ -160,4 +152,102 @@ body {
   right: 0;
   z-index: 1000;
   border-top: 1px solid #ffffff; /* Thin white line on top */
+}
+
+.left-tabs {
+  position: absolute;
+  top: 120px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+}
+.sidebar-button {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 14px;
+  background-color: #2b8cbe;         /* blue background */
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.sidebar-button:hover {
+  background-color: #1e6e97;         /* darker blue on hover */
+}
+
+.tab-button.vertical {
+  writing-mode: vertical-lr;
+  transform: none;
+  padding: 10px 6px;
+  width: auto;
+  height: 200px;
+  font-size: 1.3rem;
+  border-radius: 0 6px 6px 0;
+  background-color: #ffffff; /* default: white */
+  color: #000000;
+  border: none;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s, color 0.3s;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.tab-button.vertical:hover {
+  background-color: #2b8cbe; /* waterlogging blue */
+  color: #ffffff; /* make text white on blue */
+}
+
+
+
+.left-sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -320px; /* start off-screen */
+  width: 300px;
+  background-color: #ffffff;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  overflow-y: auto;
+  transition: left 0.6s ease-in-out; /* <--- enables smooth slide */
+  z-index: 2000;
+}
+
+.left-sidebar.open {
+  left: 0;
+}
+
+
+.leaflet-header {
+  padding: 15px 15px;
+}
+
+.leaflet-header .header-logo,
+.leaflet-header h2 {
+  font-size: 1.2rem;
+}
+
+.back-button {
+  display: inline-block;
+  padding: 8px 16px;
+  margin-left: 10px;
+  background-color: #ffffff;
+  color: #2b8cbe;
+  border: 2px solid #2b8cbe;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: #2b8cbe;
+  color: #ffffff;
+  text-decoration: none;
 }

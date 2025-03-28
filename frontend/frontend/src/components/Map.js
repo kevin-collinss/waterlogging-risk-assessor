@@ -5,7 +5,7 @@ import "./Map.css";
 import { Link } from "react-router-dom";
 
 mapboxgl.accessToken =
-  "";
+  "pk.eyJ1Ijoia2V2aW5jb2wiLCJhIjoiY20zazJ2dTF2MDhqNDJzcGVwdm1rbnlkYyJ9.cVBc9ZK9hR92V6o3vDWz5g";
 
 const WGS84 = "EPSG:4326"; // WGS84 (Longitude, Latitude)
 const IRISH_GRID = "EPSG:29903";
@@ -29,6 +29,24 @@ const Map = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [activeLeftTab, setActiveLeftTab] = useState(null);
+
+  const clusterColors = {
+    0: "#49006a", // Purple
+    1: "#2b8cbe", // Blue
+    2: "#41ae76", // Green
+    3: "#ffff33", // Yellow
+  };
+
+  const headerStyle = {
+    backgroundColor: "#8e704d",
+    backgroundImage: "url('/images/geometric-leaves.png')",
+    backgroundRepeat: "repeat",
+    backgroundSize: "auto",
+    backgroundBlendMode: "multiply",
+    color: "#ffffff"
+  };
+  
 
   useEffect(() => {
     const map = new mapboxgl.Map({
@@ -130,12 +148,7 @@ const Map = () => {
 
   return (
     <div className="map-container">
-      <header className="map-header">
-        <div className="header-left">
-          <Link to="/tech-breakdown" className="header-about-link">
-            Tech Breakdown
-          </Link>
-        </div>
+      <header className="map-header" style={headerStyle}>
         <div className="header-center">
           <img
             src="/images/waterlogging_logo.png"
@@ -147,135 +160,209 @@ const Map = () => {
       </header>
 
       <div className="map-content">
-        <div id="map"></div>
-        <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
+        <div className="left-tabs">
           <button
-            className="close-button"
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={() => setActiveLeftTab("data")}
+            className="tab-button vertical"
           >
-            &times;
+            Explore the Data
           </button>
-          {loading ? (
-            <p>Loading data...</p>
-          ) : error ? (
-            <p className="error">{error}</p>
-          ) : sidebarData ? (
-            <div className="sidebar-content">
-              <h4>Field Information</h4>
-              {sidebarData.cluster_prediction !== undefined ? (
-                <div className="cluster-prediction">
-                  <h5>Cluster Prediction</h5>
-                  <p>
-                    <strong>Predicted Cluster:</strong>{" "}
-                    {sidebarData.cluster_prediction}
-                  </p>
-                  <p>
-                    <strong>Waterlogging Risk:</strong>{" "}
-                    {clusterRiskMap[sidebarData.cluster_prediction] || "N/A"}
-                  </p>
-                </div>
-              ) : sidebarData.cluster_prediction_error ? (
-                <div className="cluster-prediction error">
-                  <h5>Cluster Prediction</h5>
-                  <p>{sidebarData.cluster_prediction_error}</p>
-                </div>
-              ) : null}
-              <hr />
-              <p>
-                <strong>Longitude:</strong> {sidebarData.longitude}
-              </p>
-              <p>
-                <strong>Latitude:</strong> {sidebarData.latitude}
-              </p>
-              <p>
-                <strong>Easting:</strong> {sidebarData.easting}
-              </p>
-              <p>
-                <strong>Northing:</strong> {sidebarData.northing}
-              </p>
-              <hr />
-              <h5>Soil Data</h5>
-              {sidebarData.soil ? (
-                <>
-                  <p>
-                    <strong>Texture:</strong> {sidebarData.soil.Texture_Su}
-                  </p>
-                  <p>
-                    <strong>Depth:</strong> {sidebarData.soil.DEPTH}
-                  </p>
-                  <p>
-                    <strong>Description:</strong> {sidebarData.soil.PlainEngli}
-                  </p>
-                </>
-              ) : (
-                <p>No soil data available.</p>
-              )}
-              <hr />
-              <h5>Hydrology Data</h5>
-              {sidebarData.hydrology ? (
-                <>
-                  <p>
-                    <strong>Category:</strong> {sidebarData.hydrology.CATEGORY}
-                  </p>
-                  <p>
-                    <strong>Material Description:</strong>{" "}
-                    {sidebarData.hydrology.ParMat_Des}
-                  </p>
-                  <p>
-                    <strong>Drainage:</strong>{" "}
-                    {sidebarData.hydrology.SoilDraina}
-                  </p>
-                </>
-              ) : (
-                <p>No hydrology data available.</p>
-              )}
-              <hr />
-              <h5>Elevation</h5>
-              {sidebarData.elevation ? (
+          <button
+            onClick={() => setActiveLeftTab("tech")}
+            className="tab-button vertical"
+          >
+            Tech Breakdown
+          </button>
+        </div>
+
+        <div id="map"></div>
+        {isSidebarOpen && (sidebarData || loading || error) && (
+          <aside className="sidebar open">
+            <button
+              className="close-button"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              &times;
+            </button>
+            {loading ? (
+              <p>Loading data...</p>
+            ) : error ? (
+              <p className="error">{error}</p>
+            ) : sidebarData ? (
+              <div className="sidebar-content">
+                <h4>Field Information</h4>
+                {sidebarData.cluster_prediction !== undefined ? (
+                  <div
+                    className="cluster-prediction"
+                    style={{
+                      backgroundColor: `${
+                        clusterColors[sidebarData.cluster_prediction]
+                      }20`,
+                      border: `2px solid ${
+                        clusterColors[sidebarData.cluster_prediction]
+                      }`,
+                    }}
+                  >
+                    <h5>Cluster Prediction</h5>
+                    <p>
+                      <strong>Predicted Cluster:</strong>{" "}
+                      {sidebarData.cluster_prediction}
+                    </p>
+                    <p>
+                      <strong>Waterlogging Risk:</strong>{" "}
+                      {clusterRiskMap[sidebarData.cluster_prediction] || "N/A"}
+                    </p>
+                  </div>
+                ) : sidebarData.cluster_prediction_error ? (
+                  <div className="cluster-prediction error">
+                    <h5>Cluster Prediction</h5>
+                    <p>{sidebarData.cluster_prediction_error}</p>
+                  </div>
+                ) : null}
+                <hr />
                 <p>
-                  <strong>Elevation:</strong>{" "}
-                  {sidebarData.elevation.Elevation} m
+                  <strong>Longitude:</strong> {sidebarData.longitude}
                 </p>
+                <p>
+                  <strong>Latitude:</strong> {sidebarData.latitude}
+                </p>
+                <p>
+                  <strong>Easting:</strong> {sidebarData.easting}
+                </p>
+                <p>
+                  <strong>Northing:</strong> {sidebarData.northing}
+                </p>
+                <hr />
+                <h5>Soil Data</h5>
+                {sidebarData.soil ? (
+                  <>
+                    <p>
+                      <strong>Texture:</strong> {sidebarData.soil.Texture_Su}
+                    </p>
+                    <p>
+                      <strong>Depth:</strong> {sidebarData.soil.DEPTH}
+                    </p>
+                    <p>
+                      <strong>Description:</strong>{" "}
+                      {sidebarData.soil.PlainEngli}
+                    </p>
+                  </>
+                ) : (
+                  <p>No soil data available.</p>
+                )}
+                <hr />
+                <h5>Hydrology Data</h5>
+                {sidebarData.hydrology ? (
+                  <>
+                    <p>
+                      <strong>Category:</strong>{" "}
+                      {sidebarData.hydrology.CATEGORY}
+                    </p>
+                    <p>
+                      <strong>Material Description:</strong>{" "}
+                      {sidebarData.hydrology.ParMat_Des}
+                    </p>
+                    <p>
+                      <strong>Drainage:</strong>{" "}
+                      {sidebarData.hydrology.SoilDraina}
+                    </p>
+                  </>
+                ) : (
+                  <p>No hydrology data available.</p>
+                )}
+                <hr />
+                <h5>Elevation</h5>
+                {sidebarData.elevation ? (
+                  <p>
+                    <strong>Elevation:</strong>{" "}
+                    {sidebarData.elevation.Elevation} m
+                  </p>
+                ) : (
+                  <p>No elevation data available.</p>
+                )}
+                <hr />
+                <h5>Rainfall</h5>
+                {sidebarData.rainfall ? (
+                  <>
+                    <p>
+                      <strong>Annual:</strong> {sidebarData.rainfall.ANN} mm
+                    </p>
+                    <p>
+                      <strong>Winter:</strong> {sidebarData.rainfall.DJF} mm
+                    </p>
+                    <p>
+                      <strong>Spring:</strong> {sidebarData.rainfall.MAM} mm
+                    </p>
+                    <p>
+                      <strong>Summer:</strong> {sidebarData.rainfall.JJA} mm
+                    </p>
+                    <p>
+                      <strong>Autumn:</strong> {sidebarData.rainfall.SON} mm
+                    </p>
+                  </>
+                ) : (
+                  <p>No rainfall data available.</p>
+                )}
+                {sidebarData.debug && (
+                  <>
+                    <hr />
+                    <h5>Debug Logs</h5>
+                    <pre>{sidebarData.debug.join("\n")}</pre>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p>No data available. Click a field to fetch data.</p>
+            )}
+          </aside>
+        )}
+        {activeLeftTab && (
+          <div className="left-sidebar open">
+            <button
+              className="close-button"
+              onClick={() => setActiveLeftTab(null)}
+            >
+              &times;
+            </button>
+            <div className="sidebar-content">
+              <h4>
+                {activeLeftTab === "data"
+                  ? "Where the Data Comes From"
+                  : "Tech Breakdown"}
+              </h4>
+              <img
+                src={
+                  activeLeftTab === "data"
+                    ? "/images/data_origin.png"
+                    : "/images/tech_breakdown.png"
+                }
+                alt="Sidebar visual"
+                style={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  marginBottom: "15px",
+                }}
+              />
+              <p>
+                {activeLeftTab === "data"
+                  ? "See where the data used to create the clusters are located in this interactive map. Visually see how areas trend towards certain clusters. There is a total of 10,000 data points across this map."
+                  : "Learn how machine learning and GIS technologies were used to analyse agricultural flood risk. Through iterative clustering techniques, we identified optimal spatial groupings—forming the basis of the classifier you’re using today."}
+              </p>
+
+              {activeLeftTab === "data" ? (
+                <Link to="/point-map" className="sidebar-button">
+                  Go to Cluster Map →
+                </Link>
               ) : (
-                <p>No elevation data available.</p>
-              )}
-              <hr />
-              <h5>Rainfall</h5>
-              {sidebarData.rainfall ? (
-                <>
-                  <p>
-                    <strong>Annual:</strong> {sidebarData.rainfall.ANN} mm
-                  </p>
-                  <p>
-                    <strong>Winter:</strong> {sidebarData.rainfall.DJF} mm
-                  </p>
-                  <p>
-                    <strong>Spring:</strong> {sidebarData.rainfall.MAM} mm
-                  </p>
-                  <p>
-                    <strong>Summer:</strong> {sidebarData.rainfall.JJA} mm
-                  </p>
-                  <p>
-                    <strong>Autumn:</strong> {sidebarData.rainfall.SON} mm
-                  </p>
-                </>
-              ) : (
-                <p>No rainfall data available.</p>
-              )}
-              {sidebarData.debug && (
-                <>
-                  <hr />
-                  <h5>Debug Logs</h5>
-                  <pre>{sidebarData.debug.join("\n")}</pre>
-                </>
+                <Link to="/tech-breakdown" className="sidebar-button">
+                  Read the Tech Breakdown →
+                </Link>
               )}
             </div>
-          ) : (
-            <p>No data available. Click a field to fetch data.</p>
-          )}
-        </aside>
+          </div>
+        )}
       </div>
-      <footer className="map-footer">
+      <footer className="map-footer" style={headerStyle}>
         <p>Powered by Mapbox | Irish Transverse Mercator Projection</p>
       </footer>
     </div>
