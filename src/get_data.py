@@ -4,7 +4,7 @@ import json
 import sys
 import joblib
 
-# Initialize debug log list
+# Initialise debug log list
 debug_logs = []
 
 # Database connection parameters
@@ -17,7 +17,6 @@ DB_CONFIG = {
 }
 
 transformer = Transformer.from_crs("EPSG:29903", "EPSG:2157", always_xy=True)
-
 
 def is_within_boundary(easting, northing):
     """Check if the given point is within the boundary in the GeoPackage."""
@@ -38,13 +37,12 @@ def is_within_boundary(easting, northing):
         result = cursor.fetchone()
         return True if result else False
     except Exception as e:
-        debug_logs.append(f"Database error in is_within_boundary: {e}")
+        debug_logs.append(f"DEBUG: Database error in is_within_boundary: {e}")
         return False
     finally:
         if conn:
             cursor.close()
             conn.close()
-
 
 def query_database(table_name, easting, northing):
     """Query the database for the closest point in the specified table."""
@@ -52,6 +50,7 @@ def query_database(table_name, easting, northing):
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
+
         if table_name == "soil_data":
             query = f"""
             SELECT *
@@ -70,24 +69,24 @@ def query_database(table_name, easting, northing):
             query = f"""
             SELECT easting, northing, elevation
             FROM {table_name}
-            ORDER BY
-                (POWER(easting - %s, 2) + POWER(northing - %s, 2))
+            ORDER BY (POWER(easting - %s, 2) + POWER(northing - %s, 2))
             LIMIT 1;
             """
         elif table_name == "rainfall_data":
             query = f"""
             SELECT easting, northing, ann, djf, mam, jja, son
             FROM {table_name}
-            ORDER BY
-                (POWER(easting - %s, 2) + POWER(northing - %s, 2))
+            ORDER BY (POWER(easting - %s, 2) + POWER(northing - %s, 2))
             LIMIT 1;
             """
         else:
             return None
+
         cursor.execute(query, (easting, northing))
         result = cursor.fetchone()
         if not result:
             return None
+
         if table_name == "soil_data":
             return {
                 "Texture_Su": result[1],
@@ -118,22 +117,24 @@ def query_database(table_name, easting, northing):
                 "SON": result[6],
             }
     except Exception as e:
-        debug_logs.append(f"Database error in query_database for {table_name}: {e}")
+        debug_logs.append(f"DEBUG: Database error in query_database for {table_name}: {e}")
         return None
     finally:
         if conn:
             cursor.close()
             conn.close()
 
-
 def get_combined_data(easting, northing):
+    """Retrieve all relevant data for a given coordinate."""
     province = is_within_boundary(easting, northing)
     if not province:
         return {"error": "Point is outside the defined boundary"}
+
     soil_data = query_database("soil_data", easting, northing)
     hydrology_data = query_database("hydrology_data", easting, northing)
     elevation_data = query_database("elevation_data", easting, northing)
     rainfall_data = query_database("rainfall_data", easting, northing)
+
     result = {
         "boundary_province": province,
         "soil_data": soil_data,
@@ -143,31 +144,37 @@ def get_combined_data(easting, northing):
     }
     return result
 
-
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         output = {"error": "Provide easting and northing as arguments", "debug": debug_logs}
         print(json.dumps(output))
         sys.exit(1)
+
     try:
         easting = float(sys.argv[1])
         northing = float(sys.argv[2])
+
         data = get_combined_data(easting, northing)
         debug_logs.append("DEBUG: Entire data dictionary:\n" + json.dumps(data, indent=2))
+
         if "error" not in data:
             try:
-                # Use TEXTURE if present; if not, fallback to Texture_Su.
+                # Use TEXTURE if present; fallback to Texture_Su
                 let_texture = data.get("soil_data", {}).get("TEXTURE")
                 if not let_texture:
                     let_texture = data.get("soil_data", {}).get("Texture_Su")
                 texture = let_texture
+
                 elevation = data.get("elevation_data", {}).get("Elevation")
                 annual_rainfall = data.get("rainfall_data", {}).get("ANN")
                 hydrology_category = data.get("hydrology_data", {}).get("CATEGORY")
+
                 debug_logs.append(f"DEBUG: texture = {texture}")
                 debug_logs.append(f"DEBUG: elevation = {elevation}")
                 debug_logs.append(f"DEBUG: annual_rainfall = {annual_rainfall}")
                 debug_logs.append(f"DEBUG: hydrology_category = {hydrology_category}")
+
+                # Check if any field is missing
                 if None not in (texture, elevation, annual_rainfall, hydrology_category):
                     try:
                         elevation = float(elevation)
@@ -176,26 +183,53 @@ if __name__ == "__main__":
                         debug_logs.append("DEBUG: Error converting numeric fields: " + str(ve))
                         data["cluster_prediction_error"] = "Missing one or more required feature values"
                     else:
+                        # Load models
                         texture_encoder = joblib.load("./models/texture_encoder.pkl")
                         hydrology_encoder = joblib.load("./models/hydrology_encoder.pkl")
                         scaler = joblib.load("./models/scaler.pkl")
                         classifier = joblib.load("./models/best_cluster_classifier.pkl")
-                        texture_encoded = texture_encoder.transform([texture])[0]
-                        hydrology_encoded = hydrology_encoder.transform([hydrology_category])[0]
-                        feature_vector = [texture_encoded, elevation, annual_rainfall, hydrology_encoded]
-                        feature_vector_scaled = scaler.transform([feature_vector])
-                        predicted_cluster = classifier.predict(feature_vector_scaled)[0]
-                        debug_logs.append(f"DEBUG: Successfully predicted cluster: {predicted_cluster}")
-                        data["cluster_prediction"] = int(predicted_cluster)
+
+                        # Check if texture is "Urban" (case-insensitive)
+                        cleaned_texture = texture.strip().lower()
+                        if cleaned_texture == "urban":
+                            data["cluster_prediction"] = "Urban: flooding doesn't apply."
+                        else:
+                            try:
+                                texture_encoded = texture_encoder.transform([texture])[0]
+                            except ValueError:
+                                data["cluster_prediction_error"] = f"'{texture}' not a valid texture to apply Risk Prediction. Try a different location."
+                                debug_logs.append(f"DEBUG: Unseen texture encountered: {texture}")
+                            else:
+                                # Next, handle hydrology
+                                try:
+                                    hydrology_encoded = hydrology_encoder.transform([hydrology_category])[0]
+                                except ValueError:
+                                    data["cluster_prediction_error"] = f"{hydrology_category}: flooding doesn't apply."
+                                    debug_logs.append(
+                                        f"DEBUG: Unseen hydrology category encountered: {hydrology_category}"
+                                    )
+                                else:
+                                    feature_vector = [
+                                        texture_encoded,
+                                        elevation,
+                                        annual_rainfall,
+                                        hydrology_encoded
+                                    ]
+                                    feature_vector_scaled = scaler.transform([feature_vector])
+                                    predicted_cluster = classifier.predict(feature_vector_scaled)[0]
+                                    debug_logs.append(f"DEBUG: Successfully predicted cluster: {predicted_cluster}")
+                                    data["cluster_prediction"] = int(predicted_cluster)
                 else:
                     debug_logs.append("DEBUG: One or more fields is missing from the data.")
                     data["cluster_prediction_error"] = "Missing one or more required feature values"
             except Exception as e:
                 debug_logs.append("DEBUG: Exception during cluster prediction: " + str(e))
                 data["cluster_prediction_error"] = str(e)
-        # Only add debug logs to output if there's an error
+
+        # Only include debug logs if there's an error
         if "cluster_prediction_error" in data:
             data["debug"] = debug_logs
+
         print(json.dumps(data))
     except Exception as e:
         print(json.dumps({"error": str(e), "debug": debug_logs}))
