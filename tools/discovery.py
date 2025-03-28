@@ -1,131 +1,178 @@
-#!/usr/bin/env python3
-"""
-explore_data.py
-
-This script loads the training data, performs exploratory data analysis (EDA),
-and outputs insights to help identify potential data issues. It includes analysis 
-of both numeric features and categorical variables (Hydrology_Category and Texture) by converting
-them to numeric values for plotting.
-"""
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import silhouette_score, silhouette_samples
+from sklearn.metrics import pairwise_distances
+from sklearn.preprocessing import StandardScaler
+import scipy.cluster.hierarchy as sch
+import os
+import warnings
+warnings.filterwarnings("ignore")
 
-def main():
-    # ------------------------------
-    # 1. Load the dataset
-    # ------------------------------
-    data_path = "../data/training_data.csv"  # Update if needed
-    df = pd.read_csv(data_path)
+# ------------------------------
+# Data Loading and Preprocessing
+# ------------------------------
+df = pd.read_csv("../data/training_data.csv")
+df = df[~df["Hydrology_Category"].isin(["Water", "Made"])]  # Filtering irrelevant rows
+
+# Save original hydrology strings before mapping
+df["Hydrology_Category_Original"] = df["Hydrology_Category"]
+
+# Select relevant columns for clustering (Texture is kept for reference; clustering uses Elevation, Annual_Rainfall, Hydrology_Category)
+columns_to_use = ["Elevation", "Annual_Rainfall", "Hydrology_Category"]
+
+# Ordinal mapping for Hydrology_Category (explicit mapping)
+mapping = {"Well Drained": 0, "AlluvMIN": 1, "Peat": 2, "Poorly Drained": 3}
+df["Hydrology_Category"] = df["Hydrology_Category"].map(mapping)
+
+# Standardise numerical data (Elevation, Annual_Rainfall)
+scaler = StandardScaler()
+df_scaled = df.copy()
+df_scaled[["Elevation", "Annual_Rainfall"]] = scaler.fit_transform(df_scaled[["Elevation", "Annual_Rainfall"]])
+
+# ------------------------------
+# Create Raw Hydrology and Apply Weighting
+# ------------------------------
+# Compute Raw_Hydrology by multiplying the mapped hydrology by 2
+df_scaled["Raw_Hydrology"] = df["Hydrology_Category"] * 2
+df_scaled["Elevation"] = df_scaled["Elevation"]  # Scaling remains the same for Elevation
+
+# ------------------------------
+# Compute Composite Indices
+# ------------------------------
+df_scaled["Flood_Risk_Index"] = df_scaled["Annual_Rainfall"] - df_scaled["Elevation"]
+df_scaled["Runoff_Index"] = (3 - df_scaled["Raw_Hydrology"]) - df_scaled["Elevation"]
+
+# ------------------------------
+# Build Final Feature Matrix for Clustering
+# ------------------------------
+final_features = ["Flood_Risk_Index", "Runoff_Index", "Raw_Hydrology"]
+X = df_scaled[final_features]
+
+# ------------------------------
+# Determine Optimal Number of Clusters via Silhouette Score (using Agglomerative Clustering)
+# ------------------------------
+silhouette_scores = []
+k_values = range(3, 10)  # try k from 3 to 9
+for k in k_values:
+    agg_temp = AgglomerativeClustering(n_clusters=k)
+    labels_temp = agg_temp.fit_predict(X)
+    score = silhouette_score(X, labels_temp)
+    silhouette_scores.append(score)
+optimal_k = k_values[silhouette_scores.index(max(silhouette_scores))]
+print(f"Agglo: Optimal number of clusters (k) based on silhouette score: {optimal_k}")
+
+# ------------------------------
+# Agglomerative Clustering
+# ------------------------------
+agglo = AgglomerativeClustering(n_clusters=optimal_k)
+df_scaled["Cluster"] = agglo.fit_predict(X)
+
+# ------------------------------
+# Dimensionality Reduction for Visualization (PCA and t-SNE)
+# ------------------------------
+# PCA Visualization
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X)
+df_scaled["PC1_PCA"] = X_pca[:, 0]
+df_scaled["PC2_PCA"] = X_pca[:, 1]
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(data=df_scaled, x="PC1_PCA", y="PC2_PCA", hue="Cluster", palette="viridis", s=100)
+plt.title(f"PCA Visualization (Agglomerative, k={optimal_k})")
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.legend(title="Cluster")
+plt.savefig("../frontend/frontend/public/images/markdown/pca_plot.png")
+plt.close()
+
+# t-SNE Visualization
+tsne = TSNE(n_components=2, perplexity=30, random_state=42)
+X_tsne = tsne.fit_transform(X)
+df_scaled["TSNE1"] = X_tsne[:, 0]
+df_scaled["TSNE2"] = X_tsne[:, 1]
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(data=df_scaled, x="TSNE1", y="TSNE2", hue="Cluster", palette="viridis", s=100)
+plt.title(f"t-SNE Visualization (Agglomerative, k={optimal_k})")
+plt.xlabel("t-SNE Dimension 1")
+plt.ylabel("t-SNE Dimension 2")
+plt.legend(title="Cluster")
+plt.savefig("../frontend/frontend/public/images/markdown/tsne_plot.png")
+plt.close()
+
+# ------------------------------
+# Silhouette Analysis and Plotting Function
+# ------------------------------
+def plot_silhouette(X, labels, method_name):
+    sil_avg = silhouette_score(X, labels)
+    sil_vals = silhouette_samples(X, labels)
+    print(f"\n{method_name} - Average Silhouette Score: {sil_avg:.4f}")
     
-    print(f"Data loaded from {data_path}. Shape: {df.shape}")
-    print("\n--- First 5 rows ---")
-    print(df.head())
-
-    # ------------------------------
-    # 2. Basic Data Info
-    # ------------------------------
-    print("\n--- Data Info ---")
-    df.info()
-
-    print("\n--- Statistical Summary (numeric columns) ---")
-    print(df.describe())
-
-    # ------------------------------
-    # 3. Check for Missing Values
-    # ------------------------------
-    print("\n--- Missing Values per Column ---")
-    print(df.isna().sum())
-
-    # ------------------------------
-    # 4. Check for Duplicates
-    # ------------------------------
-    duplicates = df.duplicated()
-    num_duplicates = duplicates.sum()
-    print(f"\n--- Number of Duplicate Rows: {num_duplicates} ---")
-    if num_duplicates > 0:
-        print("Showing first few duplicate rows:")
-        print(df[duplicates].head())
-
-    # ------------------------------
-    # 5. Convert Categorical Variables to Numeric
-    # ------------------------------
-    # For Hydrology_Category, assume you already have an encoding (e.g., Hydrology_scaled)
-    # For Texture, perform label encoding if it exists
-    if 'Texture' in df.columns:
-        df['Texture_encoded'] = df['Texture'].astype('category').cat.codes
-        print("\nTexture encoding mapping:")
-        print(dict(enumerate(df['Texture'].astype('category').cat.categories)))
-    else:
-        print("\nNo Texture column found.")
-
-    # ------------------------------
-    # 6. Prepare a List of Numeric Columns for Plotting
-    # ------------------------------
-    # We'll include a selection of numeric features: Elevation, Annual_Rainfall,
-    # Hydrology_scaled, Runoff_Index, and Texture_encoded (if available)
-    numeric_cols = []
-    for col in ['Elevation', 'Annual_Rainfall', 'Hydrology_scaled', 'Runoff_Index']:
-        if col in df.columns:
-            numeric_cols.append(col)
-    if 'Texture_encoded' in df.columns:
-        numeric_cols.append('Texture_encoded')
+    # Predefined colors for each cluster (matching the provided image colors)
+    cluster_colors = ['#49006a', '#2b8cbe', '#41ae76', '#ffff33']  # Purple, Blue, Green, Yellow
     
-    print("\nNumeric columns selected for plotting:", numeric_cols)
+    plt.figure(figsize=(8, 6))
+    y_lower = 10
+    n_clusters = len(np.unique(labels))
 
-    # ------------------------------
-    # 7. Distribution Plots for Numeric Features
-    # ------------------------------
-    print("\n--- Plotting Histograms for Numeric Features ---")
-    df[numeric_cols].hist(figsize=(12, 8), bins=20)
-    plt.suptitle("Histogram of Numeric Features")
-    plt.tight_layout()
-    plt.show()
-
-    # ------------------------------
-    # 8. Correlation Heatmap for Numeric Features
-    # ------------------------------
-    if len(numeric_cols) > 1:
-        corr = df[numeric_cols].corr()
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(corr, annot=True, cmap='viridis', fmt=".2f")
-        plt.title("Correlation Heatmap of Selected Numeric Features")
-        plt.show()
-
-    # ------------------------------
-    # 9. Boxplots for Outlier Detection (Numeric Columns)
-    # ------------------------------
-    plt.figure(figsize=(12, 6))
-    for i, col in enumerate(numeric_cols, 1):
-        plt.subplot(1, len(numeric_cols), i)
-        sns.boxplot(y=df[col], color='skyblue')
-        plt.title(col)
-    plt.tight_layout()
-    plt.show()
-
-    # ------------------------------
-    # 10. Categorical Column Summaries and Count Plots
-    # ------------------------------
-    # Also show count plots for Hydrology_Category and Texture (original values)
-    categorical_cols = []
-    for col in ['Hydrology_Category', 'Texture']:
-        if col in df.columns:
-            categorical_cols.append(col)
+    for i in np.unique(labels):
+        ith_vals = sil_vals[labels == i]
+        ith_vals.sort()
+        size_i = ith_vals.shape[0]
+        y_upper = y_lower + size_i
+        plt.fill_betweenx(np.arange(y_lower, y_upper), 0, ith_vals, color=cluster_colors[i], alpha=0.7)  # Use predefined colors
+        plt.text(-0.05, y_lower + 0.5 * size_i, str(i), color='black')  # Adding black color for cluster number text
+        y_lower = y_upper + 10
     
-    print("\n--- Categorical Columns Summary ---")
-    for cat_col in categorical_cols:
-        print(f"\nValue counts for {cat_col}:")
-        print(df[cat_col].value_counts(dropna=False))
-        plt.figure(figsize=(8, 4))
-        sns.countplot(data=df, x=cat_col, order=df[cat_col].value_counts().index, palette='viridis')
-        plt.title(f"Count Plot for {cat_col}")
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.show()
+    plt.axvline(x=sil_avg, color="red", linestyle="--")  # Highlight the average silhouette score
+    plt.xlabel("Silhouette Score")
+    plt.ylabel("Cluster Label")
+    plt.title(f"Silhouette Plot for {method_name} (n_clusters = {n_clusters})")
+    plt.savefig(f"../frontend/frontend/public/images/markdown/silhouette_plot.png")
+    plt.close()
 
-    print("\nExploratory data analysis complete.")
+plot_silhouette(X, df_scaled["Cluster"].values, "Agglomerative Clustering")
 
-if __name__ == "__main__":
-    main()
+# ------------------------------
+# Dendrogram for Agglomerative Clustering
+# ------------------------------
+plt.figure(figsize=(10, 7))
+sch.dendrogram(sch.linkage(X, method='ward'))
+plt.title('Dendrogram for Agglomerative Clustering')
+plt.xlabel('Data Points')
+plt.ylabel('Euclidean Distance')
+plt.savefig("../frontend/frontend/public/images/markdown/dendrogram_plot.png")
+plt.close()
+
+# ------------------------------
+# Pairplot for Visualizing Relationships
+# ------------------------------
+sns.pairplot(df_scaled, hue="Cluster", palette="viridis")
+plt.savefig("../frontend/frontend/public/images/markdown/pairplot.png")
+plt.close()
+
+# ------------------------------
+# Elbow Method Plot for Optimal Number of Clusters
+# ------------------------------
+from sklearn.cluster import KMeans
+
+inertia = []
+k_range = range(1, 11)
+for k in k_range:
+    kmeans = KMeans(n_clusters=k)
+    kmeans.fit(X)
+    inertia.append(kmeans.inertia_)
+
+plt.figure(figsize=(8, 6))
+plt.plot(k_range, inertia, marker='o')
+plt.title('Elbow Method for Optimal Clusters')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Inertia')
+plt.savefig("../frontend/frontend/public/images/markdown/elbow_method.png")
+plt.close()

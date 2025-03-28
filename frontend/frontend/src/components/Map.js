@@ -24,6 +24,13 @@ const clusterRiskMap = {
   3: "Low to Moderate",
 };
 
+const clusterInterpretationMap = {
+  0: "Because the soils are well drained and the runoff index is strongly positive, water will tend to flow away efficiently. The negative or near-zero flood risk index means rainfall is not overwhelming relative to elevation.",
+  1: "With moderate rainfall, poor drainage, and a strongly negative runoff index, water is likely to remain, indicating a higher risk of waterlogging.",
+  2: "Although the rainfall is relatively higher, the soils are only moderately drained, and the runoff index is less negative, resulting in a moderate risk.",
+  3: "Even though soils are poorly drained and runoff is strongly negative, the lower rainfall reduces overall water input, thus lowering the likelihood of large-scale waterlogging events."
+};
+
 const Map = () => {
   const [sidebarData, setSidebarData] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -42,7 +49,7 @@ const Map = () => {
     backgroundColor: "#8e704d",
     backgroundImage: "url('/images/geometric-leaves.png')",
     backgroundRepeat: "repeat",
-    backgroundSize: "auto",
+    backgroundSize: "auto ",
     backgroundBlendMode: "multiply",
     color: "#ffffff"
   };
@@ -203,14 +210,16 @@ const Map = () => {
                       }`,
                     }}
                   >
-                    <h5>Cluster Prediction</h5>
-                    <p>
+                    <h5>Waterlogging Risk</h5>
+                    <p style={{ fontSize: "larger", marginTop: "15px" }}>
+                      {clusterRiskMap[sidebarData.cluster_prediction] || "N/A"}
+                    </p>
+                    <p style={{ fontSize: "smaller", marginTop: "15px" }}>
+                      {clusterInterpretationMap[sidebarData.cluster_prediction]}
+                    </p>
+                    <p style={{ marginTop: "15px" }}>
                       <strong>Predicted Cluster:</strong>{" "}
                       {sidebarData.cluster_prediction}
-                    </p>
-                    <p>
-                      <strong>Waterlogging Risk:</strong>{" "}
-                      {clusterRiskMap[sidebarData.cluster_prediction] || "N/A"}
                     </p>
                   </div>
                 ) : sidebarData.cluster_prediction_error ? (

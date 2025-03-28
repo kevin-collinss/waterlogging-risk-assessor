@@ -1,7 +1,8 @@
-// src/components/TechBreakdown.js
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm'; // enables tables, strikethrough, autolinks
 import { Link } from 'react-router-dom';
+import 'github-markdown-css'; // import GitHub styles
 
 const TechBreakdown = () => {
   const [markdown, setMarkdown] = useState('');
@@ -13,13 +14,17 @@ const TechBreakdown = () => {
   }, []);
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Montserrat, sans-serif' }}>
-      {/* Link back to the Map page */}
-      <Link to="/" style={{ textDecoration: 'none', color: '#8e704d', fontWeight: 'bold' }}>
+    <div style={{ padding: '40px' }}>
+      {/* Fixed Back to Map Button */}
+      <Link to="/map" className="fixed-back-button">
         ← Back to Map
       </Link>
-      <h1>Tech Breakdown</h1>
-      <ReactMarkdown>{markdown}</ReactMarkdown>
+
+      <div className="markdown-body" style={{ marginTop: '20px' }}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {markdown}
+        </ReactMarkdown>
+      </div>
     </div>
   );
 };

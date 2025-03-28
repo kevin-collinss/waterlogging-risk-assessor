@@ -60,7 +60,7 @@ const LeafletPointMap = () => {
         }}
       >
         <div className="header-left">
-          <Link to="/" className="back-button">
+          <Link to="/map" className="back-button">
             ← Back to Main Map
           </Link>
         </div>
