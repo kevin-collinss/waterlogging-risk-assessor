@@ -42,7 +42,7 @@ const Map = () => {
     backgroundColor: "#8e704d",
     backgroundImage: "url('/images/geometric-leaves.png')",
     backgroundRepeat: "repeat",
-    backgroundSize: "auto",
+    backgroundSize: "auto ",
     backgroundBlendMode: "multiply",
     color: "#ffffff"
   };
