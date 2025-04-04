@@ -4,7 +4,6 @@ import json
 import sys
 import joblib
 
-# Initialise debug log list
 debug_logs = []
 
 # Database connection parameters

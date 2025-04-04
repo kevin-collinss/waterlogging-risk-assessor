@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm'; // enables tables, strikethrough, autolinks
+import remarkGfm from 'remark-gfm'; 
 import { Link } from 'react-router-dom';
-import 'github-markdown-css'; // import GitHub styles
+import 'github-markdown-css'; 
 
 const TechBreakdown = () => {
   const [markdown, setMarkdown] = useState('');
@@ -15,7 +15,6 @@ const TechBreakdown = () => {
 
   return (
     <div style={{ padding: '40px' }}>
-      {/* Fixed Back to Map Button */}
       <Link to="/map" className="fixed-back-button">
         ← Back to Map
       </Link>

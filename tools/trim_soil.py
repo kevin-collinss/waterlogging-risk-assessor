@@ -14,7 +14,7 @@ soil_data['max_x'] = soil_data['geometry'].apply(lambda geom: geom.bounds[2])
 soil_data['max_y'] = soil_data['geometry'].apply(lambda geom: geom.bounds[3])
 
 # Define a grid size (in meters) for clustering
-grid_size = 1000  # 1 km grid
+grid_size = 1000 
 
 # Assign grid IDs for clustering
 soil_data['grid_id'] = (

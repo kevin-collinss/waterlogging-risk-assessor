@@ -6,9 +6,6 @@ from sklearn.metrics import silhouette_score, silhouette_samples, davies_bouldin
 import warnings
 warnings.filterwarnings("ignore")
 
-# ------------------------------
-# Custom Dunn Index Function
-# ------------------------------
 def dunn_index(X, labels):
     unique_labels = np.unique(labels)
     intra_dists = []
@@ -34,9 +31,6 @@ def dunn_index(X, labels):
     
     return min_inter / max_intra
 
-# ------------------------------
-# Custom Gap Statistic Function (Simplified)
-# ------------------------------
 def gap_statistic(X, labels, nrefs=10):
     from sklearn.cluster import KMeans
     def compute_wk(X, labels):
@@ -65,29 +59,17 @@ def gap_statistic(X, labels, nrefs=10):
     gap = np.mean(np.log(Wkrefs)) - np.log(Wks)
     return gap
 
-# ------------------------------
-# Load Clustered Data
-# ------------------------------
 df = pd.read_csv("../data/training_data_with_clusters.csv")
 print("Columns in the dataset:")
 print(df.columns.tolist())
 
-# ------------------------------
-# Ensure Numeric Conversion for Evaluation Features
-# ------------------------------
 eval_features = ["Flood_Risk_Index", "Runoff_Index", "Raw_Hydrology"]
 for col in eval_features:
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
-# ------------------------------
-# Use features as stored in the CSV (already scaled)
-# ------------------------------
 X = df[eval_features].values
 
-# ------------------------------
-# Descriptive Statistics for Clustering
-# ------------------------------
-cluster_method = "Cluster"  # using clustering results stored in the "Cluster" column
+cluster_method = "Cluster" 
 if cluster_method in df.columns:
     print(f"\n=== Descriptive Statistics for {cluster_method} ===")
     cluster_summary = df.groupby(cluster_method)[eval_features].mean()
@@ -104,9 +86,6 @@ if cluster_method in df.columns:
 else:
     print(f"Column '{cluster_method}' not found in the data.")
 
-# ------------------------------
-# Evaluation Metrics for Clustering
-# ------------------------------
 if cluster_method in df.columns:
     labels = df[cluster_method].values
     try:
@@ -136,9 +115,6 @@ if cluster_method in df.columns:
 else:
     print(f"Skipping evaluation for '{cluster_method}' as it is not in the data.")
 
-# ------------------------------
-# Pairplot for Visual Analysis of Composite Features
-# ------------------------------
 if cluster_method in df.columns:
     sns.pairplot(df, vars=eval_features, hue=cluster_method, palette="viridis", diag_kind="kde")
     plt.suptitle(f"Pairplot of Composite Features Colored by {cluster_method}", y=1.02)

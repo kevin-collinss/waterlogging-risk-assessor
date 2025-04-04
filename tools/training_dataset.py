@@ -21,9 +21,9 @@ fields = ["Easting", "Northing", "Texture", "Description", "Elevation", "Annual_
 # Initialize CSV file
 with open(output_csv, "w", newline="") as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(fields)  # Write the header
+    writer.writerow(fields) 
 
-    valid_points = 0  # Counter for valid data points
+    valid_points = 0
 
     while valid_points < num_points:
         # Randomly generate a coordinate within the bounds

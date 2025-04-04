@@ -6,7 +6,7 @@ body {
   background: #8e704d; 
   color: #ffffff;
   padding: 15px 20px;
-  border-bottom: 1px solid #ffffff; /* Thin white line */
+  border-bottom: 1px solid #ffffff; 
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   position: absolute;
   top: 0;
@@ -92,7 +92,7 @@ body {
   font-size: 0.9rem;
   line-height: 1.4;
   color: #333;
-  text-align: left;  /* Ensures content is left-aligned */
+  text-align: left;  
 }
 
 .sidebar-content h4,
@@ -121,18 +121,16 @@ body {
   color: #0050b3;
 }
 
-
-/* Close Button at top-right */
 .close-button {
   position: absolute;
   top: 10px;
-  right: 10px;      /* Move to top-right corner */
+  right: 10px;      
   font-size: 1.5rem;
   background: none;
   border: none;
   cursor: pointer;
   color: #888;
-  z-index: 9999;    /* Ensure it's on top of other elements */
+  z-index: 9999;    
 }
 
 .close-button:hover {
@@ -151,7 +149,7 @@ body {
   left: 0;
   right: 0;
   z-index: 1000;
-  border-top: 1px solid #ffffff; /* Thin white line on top */
+  border-top: 1px solid #ffffff;
 }
 
 .left-tabs {
@@ -166,7 +164,7 @@ body {
   display: inline-block;
   margin-top: 15px;
   padding: 10px 14px;
-  background-color: #2b8cbe;         /* blue background */
+  background-color: #2b8cbe;         
   color: white;
   text-decoration: none;
   border-radius: 6px;
@@ -176,7 +174,7 @@ body {
 }
 
 .sidebar-button:hover {
-  background-color: #1e6e97;         /* darker blue on hover */
+  background-color: #1e6e97;       
 }
 
 .tab-button.vertical {
@@ -187,7 +185,7 @@ body {
   height: 200px;
   font-size: 1.3rem;
   border-radius: 0 6px 6px 0;
-  background-color: #ffffff; /* default: white */
+  background-color: #ffffff; 
   color: #000000;
   border: none;
   box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
@@ -197,8 +195,8 @@ body {
 }
 
 .tab-button.vertical:hover {
-  background-color: #2b8cbe; /* waterlogging blue */
-  color: #ffffff; /* make text white on blue */
+  background-color: #2b8cbe; 
+  color: #ffffff; 
 }
 
 
@@ -207,7 +205,7 @@ body {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -320px; /* start off-screen */
+  left: -320px; 
   width: 300px;
   background-color: #ffffff;
   border-top-right-radius: 10px;
@@ -215,7 +213,7 @@ body {
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
   padding: 20px;
   overflow-y: auto;
-  transition: left 0.6s ease-in-out; /* <--- enables smooth slide */
+  transition: left 0.6s ease-in-out; 
   z-index: 2000;
 }
 
@@ -320,9 +318,9 @@ body {
 
 .fixed-back-button {
   position: fixed;
-  top: 20px; /* Adjust as needed */
-  left: 20px; /* Adjust as needed */
-  background-color: #1e6e97; /* Match the theme */
+  top: 20px; 
+  left: 20px;
+  background-color: #1e6e97; 
   color: white;
   padding: 10px 20px;
   border-radius: 5px;
@@ -332,5 +330,5 @@ body {
 }
 
 .fixed-back-button:hover {
-  background-color: #1e6e97; /* Darker shade on hover */
+  background-color: #1e6e97;
 }

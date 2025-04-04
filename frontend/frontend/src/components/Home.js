@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "./Map.css"; // Use same styles for consistency
+import "./Map.css";
 
 const Home = () => {
   return (

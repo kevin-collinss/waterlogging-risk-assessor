@@ -4,7 +4,7 @@ import Papa from "papaparse";
 import proj4 from "proj4";
 import "leaflet/dist/leaflet.css";
 import { Link } from "react-router-dom";
-import "./Map.css"; // Reuse existing CSS for header/footer
+import "./Map.css";
 
 // Define projections
 const WGS84 = "EPSG:4326";
