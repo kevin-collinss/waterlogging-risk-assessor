@@ -7,8 +7,8 @@ input_path = 'data/45N015W_3S.ACE2'
 output_csv_path = 'valid_irish_coords_irish_grid.csv'
 
 # Define Ireland's WGS84 bounds (longitude and latitude)
-LON_MIN, LON_MAX = -10.5, -5.5  # Longitude bounds for Ireland
-LAT_MIN, LAT_MAX = 51.4, 55.5   # Latitude bounds for Ireland
+LON_MIN, LON_MAX = -10.5, -5.5
+LAT_MIN, LAT_MAX = 51.4, 55.5  
 
 # Define transformer (WGS84 -> Irish Grid EPSG:29903)
 transformer = Transformer.from_crs("EPSG:4326", "EPSG:29903", always_xy=True)

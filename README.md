@@ -1,223 +1,79 @@
-# Waterlogging Risk Assessor
+# Field Flood and Waterlogging Risk Analysis System
 
-# Tech Breakdown: Waterlogging Risk Classifier
+The Field Flood and Waterlogging Risk Analysis System is a technical solution developed to address the increasing risk of waterlogging across Irish agricultural land. The motivation behind the system stems from observable environmental changes — in particular, heavier and more persistent rainfall patterns, and increasing soil saturation. Current government flood risk tools offer regional-scale insights and are unsuitable for decision-making at the individual field level. This system bridges that gap through a combination of geospatial data, clustering algorithms, and a machine learning-based classification framework, ultimately serving farmers and planners with detailed, interpretable insights.
 
-This document provides a detailed explanation of the technical design, algorithms, and tools used to create the Waterlogging Risk Classifier. The goal of this tool is to help farmers, researchers, and planners better understand waterlogging and flood risk on agricultural land in Ireland using real-world environmental data and machine learning.
+## The Data
 
----
+- Each data point represents a unique field-scale sample from across the Republic of Ireland, supporting a highly granular modelling approach.
+- Four primary datasets were integrated:
+  - Topographic elevation data from NASA
+  - Annual rainfall figures from Met Éireann
+  - Soil texture and hydrology from the Teagasc Irish Soil Information System (ISIS)
+- All datasets were originally provided in different spatial reference systems (e.g., WGS84, UTM, Irish Grid), which required harmonisation.
+- To ensure alignment and spatial consistency, all features were transformed into the EPSG:29903 Irish Grid projection before processing.
+- Invalid or incomplete records were removed to produce a final cleaned dataset suitable for both clustering and real-time inference.
 
-## 1. Data Collection and Preprocessing
+To gather data for clustering I created a script to get 10,000 points across Ireland.
 
-The dataset used for training the model is generated using a custom script (`training_dataset.py`) that:
-
-- Randomly samples geographic coordinates (Easting, Northing) across Ireland using Irish Grid bounds.
-- Queries a backend Flask API (`/get_data`) for each sampled point, returning:
-  - **Soil texture and description**
-  - **Elevation**
-  - **Annual rainfall**
-  - **Hydrology category**
-- Filters out incomplete or invalid points.
-- Writes structured, valid entries to `training_data.csv`.
-
-### Example structure of collected fields:
-- `Easting`, `Northing`
-- `Texture`, `Description`
-- `Elevation`, `Annual_Rainfall`
-- `Hydrology_Category`
+![Default Map](/frontend/frontend/public/images/markdown/default_map.png)
 
 ---
 
-## 2. Feature Engineering & Clustering (Unsupervised Learning)
+## Feature Engineering
 
-The script `clustering.py` processes the raw dataset and performs unsupervised learning to group fields into meaningful waterlogging risk clusters.
+- The dataset excluded entries with hydrology categories labelled "Water" or "Made" to remove artificial or unreliable entries.
+- Hydrology categories were ordinally encoded using expert-informed mappings to better reflect their physical properties.
+- Elevation and annual rainfall values were standardised to ensure equal weighting during clustering.
+- A new field called **Raw Hydrology** was computed by multiplying the encoded hydrology value by 2 — this increased its influence in further calculations.
+- **Flood Risk Index** was calculated as `Annual Rainfall - Elevation`, representing a proxy for water accumulation potential.
+- **Runoff Index** was defined as `(3 - Raw Hydrology) - Elevation`, integrating drainage potential with elevation drop to estimate runoff sensitivity.
+- The feature matrix `X` used for clustering included Flood Risk Index, Runoff Index, and Raw Hydrology — all engineered variables with practical environmental interpretations.
 
-### Preprocessing Steps
-- Removes unwanted categories (`Water`, `Made`).
-- Applies ordinal encoding to categorical values (e.g., `Hydrology_Category`).
-- Standardises features like `Elevation` and `Annual_Rainfall`.
-- Introduces two domain-specific indices:
-  - **Flood Risk Index**: `Annual_Rainfall - Elevation`
-  - **Runoff Index**: A custom formula incorporating soil drainage potential.
+## Clustering Process and Analysis
 
+Unsupervised learning was used to identify natural risk zones in the Irish agricultural landscape. Initial tests were run with K-Means and DBSCAN, but they showed weaknesses in identifying uneven and irregular environmental patterns. K-Means struggled with the spherical cluster assumption, while DBSCAN's density-based approach was too sensitive to parameter tuning and underperformed on sparse areas. Ultimately, Agglomerative Clustering was selected for its ability to construct a hierarchical tree of fields based on feature similarity.
 
-### Elbow Method for Optimal Clusters
-The elbow method is a commonly used technique to determine the optimal number of clusters. It plots the inertia (or within-cluster sum of squares) against the number of clusters. The optimal point corresponds to the "elbow" of the curve, where the inertia starts to decrease more slowly.
+![Sil Comparison](/frontend/frontend/public/images/markdown/sil_comparison.png)
 
-![Elbow Method](../images/markdown/elbow_method.png)
+![Elbow Method](/frontend/frontend/public/images/markdown/elbow_method.png)  
+The Elbow Method showed that 4 clusters represented the optimal trade-off between model complexity and inertia reduction.
 
-### Clustering
-We use **Agglomerative Clustering**, a hierarchical algorithm, to group data points based on similarity in environmental attributes.
+![Silhouette Score](/frontend/frontend/public/images/markdown/silhouette_score.png)  
+The silhouette score peaked at 4 clusters, confirming high intra-cluster similarity and inter-cluster separation.
 
-- Silhouette scores are computed to determine the optimal number of clusters (typically 4).
-- Each point is assigned a cluster label (0–3), corresponding to flood risk levels.
+![Silhouette Plot](/frontend/frontend/public/images/markdown/silhouette_plot.png)  
+Silhouette plots highlighted that Cluster 0 was slightly noisier than the others, while Cluster 2 demonstrated excellent separation and cohesion, often corresponding to well-drained soils on elevated terrain.
 
-### Silhouette Score for Clustering
-The silhouette score provides a single score to evaluate the clustering quality, considering both the cohesion (how close points are within their cluster) and separation (how well-separated the clusters are).
+![Dendrogram](/frontend/frontend/public/images/markdown/dendrogram_plot.png)  
+The dendrogram provides insight into the hierarchical grouping of fields, showing which clusters were merged and when during the agglomerative process. The 4 major clusters emerge at a Euclidean height that aligns with environmental intuition.
 
-![Silhouette Score](../images/markdown/silhouette_score.png)
+![Pairplot](/frontend/frontend/public/images/markdown/pairplot.png)  
+This pairplot offers a multidimensional snapshot of how environmental features correlate across clusters. For example, rainfall and soil texture groupings are visible in the diagonal histograms, supporting the idea that the model is capturing interpretable environmental behaviour.
 
-### Silhouette Plot for Clustering Evaluation
-The silhouette score measures how similar each point is to its own cluster compared to other clusters. A higher score indicates better-defined clusters. The silhouette plot below shows the scores for each data point in the clusters.
+## Cluster Projection and Interpretation
 
-![Silhouette Plot](../images/markdown/silhouette_plot.png)
+![PCA Plot](/frontend/frontend/public/images/markdown/pca_plot.png)  
+The PCA projection shows the clustering behaviour in reduced 2D space. Clusters 1 and 2 appear as compact, tightly grouped regions, suggesting highly distinguishable environmental profiles, while Cluster 0 spans a broader region with less internal coherence.
 
-This Silhouette Plot for Agglomerative Clustering shows how well-separated and well-formed each cluster is. The silhouette score ranges from -1 to +1, where a higher score indicates better-defined clusters. The red dashed line represents the average silhouette score (0.6), which suggests good clustering overall.
+![t-SNE Plot](/frontend/frontend/public/images/markdown/tsne_plot.png)  
+The t-SNE visualisation confirms the separation seen in PCA, but better highlights local grouping within each cluster. It's particularly effective at illustrating overlapping fields that may share flood or drainage profiles.
 
-Cluster 3 (yellow) and Cluster 2 (green) show strong separation, while Cluster 1 (blue) is slightly less distinct.
+![Cluster Evaluation](/frontend/frontend/public/images/markdown/cluster_eval.png)  
+The final cluster evaluation summary provides a quantitative assessment: a silhouette score of 0.595 suggests strong cluster structure, while the Davies-Bouldin and Dunn indices show strong separation and minimal overlap. The high Calinski-Harabasz score further supports the compactness of clusters.
 
-Cluster 0 (purple) has the lowest silhouette score, suggesting it is less cohesive or potentially misclassified.
+![Data Origin](/frontend/frontend/public/images/data_origin.png)
 
-### Dendrogram: Visualising Hierarchical Clustering
+## Classifier Design and Evaluation
 
-To better understand how the clustering algorithm grouped different environmental points, we generated a dendrogram. This visual shows the hierarchical structure of how similar data points are merged during the agglomerative clustering process.
+Once clusters were assigned, the challenge was enabling real-time predictions for new unseen fields. Since clustering is unsupervised and does not generalise beyond training data, a supervised classification model was introduced post-clustering. This model learns to replicate the cluster assignments based on the environmental features. Multiple classifiers were tested, including Logistic Regression, SVM, and k-NN, but Random Forest delivered the best balance of accuracy and generalisability.
 
-![Dendrogram of Clustering Process](/images/markdown/dendrogram_plot.png)
+![Confusion Matrix](/frontend/frontend/public/images/markdown/confusion_matrix.png)  
+The confusion matrix shows near-perfect prediction for Clusters 2 and 3. Minor confusion occurred between Clusters 0 and 1, which were both associated with moderate-risk fields. Overall, the test accuracy was 91.67% with strong precision and recall across the board.
 
-This Dendrogram for Agglomerative Clustering provides insight into the hierarchical relationships between the data points. The blue line represents the final split between the first two major clusters.
+## Deployment Architecture
 
-The orange cluster is more fragmented, indicating the presence of several sub-clusters within it.
+The model is deployed as part of a full-stack web application. The frontend is built with React and Mapbox GL JS. Users interactively click a location, triggering a request to the backend that passes the coordinate to a Python script via Node.js. The script fetches the environmental data, standardises it, and passes it to the Random Forest model to predict a flood risk cluster. The result, along with soil, elevation, and rainfall breakdowns, is returned to the frontend and displayed in a sidebar.
 
-The green cluster is more compact, suggesting a tighter grouping of data points.
+## Expert Feedback and Future Improvements
 
-The analysis reveals that four distinct clusters are formed after considering the dendrogram's structure, as indicated by the splitting of the clusters at the appropriate Euclidean distance. 
-
-### Pairplot for Clustering Visualization
-A pairplot provides a matrix of scatter plots that show relationships between each pair of features. It can reveal if the clusters are separable and if the features are correlated.
-
-![Pairplot](../images/markdown/pairplot.png)
-
-## Visualisation
-For interpretability, clustering results are projected into 2D using:
-
-### PCA Visualization
-Principal Component Analysis (PCA) reduces the dimensionality of the dataset while preserving as much variance as possible. This plot shows the clustering results in the reduced 2D space defined by the first two principal components.
-
-![PCA Plot](../images/markdown/pca_plot.png)
-
-### t-SNE Visualization
-t-SNE is another dimensionality reduction technique that helps visualize high-dimensional data in two dimensions. This plot shows how well the clusters are separated after applying t-SNE.
-
-![t-SNE Plot](../images/markdown/tsne_plot.png)
-
-These plots allow us to visually verify the separation and density of each cluster.
-
----
-
-## 3. Classifier Training (Supervised Learning)
-
-The script `train_cluster_classifier.py` trains a **supervised machine learning model** that learns to predict the cluster label from raw features — enabling predictions on new unseen locations.
-
-### Features used:
-- Soil Texture (encoded)
-- Elevation (scaled)
-- Annual Rainfall (scaled)
-- Hydrology Category (encoded)
-
-### Model Training Workflow:
-1. Split data into train and test sets (80/20).
-2. Train 4 classifiers:  
-   - **Random Forest**  
-   - **Support Vector Machine (SVM)**  
-   - **K-Nearest Neighbours (kNN)**  
-   - **Logistic Regression**
-3. Evaluate each using accuracy and classification report.
-4. Save the best-performing model using `joblib`.
-
-The winning model is saved as:  
-
-/models/best_cluster_classifier.pkl
-
----
-## 4. Backend API Server
-
-The backend server is implemented using **Node.js** with the **Express.js** framework. Its core responsibility is to act as a bridge between the frontend map interface and the Python-based data and machine learning logic.
-
-### Responsibilities:
-- Accepts incoming requests from the frontend containing location coordinates.
-- Executes a Python script (`get_data.py`) to retrieve environmental and predictive information.
-- Sends back a structured JSON response with all relevant data.
-
-### How it Works:
-When a user clicks a location on the map:
-1. The Mapbox frontend extracts the longitude and latitude of the clicked point.
-2. These coordinates are converted to Irish Grid (EPSG:29903).
-3. A POST request is made to the Express endpoint `/get_data` with the easting and northing values.
-4. `server.js` runs `get_data.py` using `child_process.exec`, passing the coordinates as arguments.
-5. The Python script:
-   - Loads environmental data from preprocessed sources or live queries.
-   - Uses the trained classifier model to predict the waterlogging cluster.
-   - Returns all relevant attributes (e.g. soil, rainfall, hydrology, elevation).
-6. The JSON response is returned to the frontend to populate the right-hand sidebar.
-
-### Example Response:
-```json
-{
-  "soil_data": {
-    "Texture_Su": "Peat",
-    "DEPTH": "50-100cm",
-    "PlainEngli": "Dark, organic-rich soil"
-  },
-  "hydrology_data": {
-    "CATEGORY": "Poorly Drained",
-    "ParMat_Des": "Peat/Clay",
-    "SoilDraina": "Low"
-  },
-  "elevation_data": {
-    "Elevation": 122.5
-  },
-  "rainfall_data": {
-    "ANN": 1300,
-    "DJF": 420,
-    "MAM": 290,
-    "JJA": 280,
-    "SON": 310
-  },
-  "cluster_prediction": 2
-}
-```
----
-
-## 5. Interactive Frontend (Mapbox)
-
-The interactive frontend interface is built using **React** and **Mapbox GL JS** and serves as the primary point of interaction for users exploring flood risk. It allows users to click on any location in Ireland and retrieve predictions and environmental context for that area.
-
-### Key Features
-
-- **Satellite-Street Map Layer:** The interface uses Mapbox's `satellite-streets-v11` basemap for a rich, real-world view.
-- **Click Interaction:** When a user clicks on the map, their coordinates are captured and converted to Irish Grid format (EPSG:29903) using the `proj4` library.
-- **Live Data Fetching:** A POST request is sent to the backend with easting and northing values. The server responds with environmental data and a predicted cluster.
-- **Sidebar Display:** A responsive sidebar presents the prediction results, including:
-  - Predicted cluster and associated waterlogging risk label.
-  - Soil characteristics.
-  - Hydrology classification.
-  - Elevation in metres.
-  - Seasonal and annual rainfall data.
-- **Map Stamp Visualisation:** A circular "stamp" image is overlaid on the map to indicate the area the user clicked on for analysis.
-
-### Cluster Risk Mapping
-
-Each predicted cluster maps to a predefined waterlogging risk category:
-
-| Cluster | Risk Level         | Colour     |   
-|---------|--------------------|------------|   
-| 0       | Low                | Purple     |   
-| 1       | Moderate to High   | Blue       |   
-| 2       | Moderate           | Green      |   
-| 3       | Low to Moderate    | Yellow     |   
-
-
----
-
-## 6. Cluster Visualisation (Leaflet)
-
-The `LeafletPointMap.js` component is an alternative interface for viewing all training data points and their cluster classifications. It is built with **React-Leaflet**, a wrapper around the Leaflet.js library, known for its light-weight mapping performance.
-
-### Key Features
-
-- **Dataset Integration:** Points are sourced from the `training_data_with_clusters.csv` file, which contains pre-labelled training data.
-- **Coordinate Transformation:** Points stored in Irish Grid format (EPSG:29903) are transformed into WGS84 (EPSG:4326) using the `proj4` library before rendering.
-- **Point Rendering:** All points are rendered as `CircleMarker` elements with fixed radii and colour-coded styling based on their cluster label.
-- **Performance Optimisation:** Leaflet’s lightweight rendering makes it suitable for displaying thousands of small markers simultaneously.
-
-This map allows users to visually understand how the unsupervised learning algorithm has segmented the Irish landscape by flood risk, and compare spatial patterns across the country.
-
+Dr. Ken Byrne, an expert in soil science, reviewed the model outputs and confirmed that cluster definitions matched known field drainage characteristics. He recommended the addition of soil conductivity data to further improve classification reliability. Future extensions also include integrating seasonal rainfall updates and developing real-time flood forecasting capabilities.
