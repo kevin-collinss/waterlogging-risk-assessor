@@ -99,6 +99,8 @@ t-SNE is another dimensionality reduction technique that helps visualize high-di
 
 These plots allow us to visually verify the separation and density of each cluster.
 
+![Cluster Eval](../images/markdown/cluster_eval.png)
+
 ---
 
 ## 3. Classifier Training (Supervised Learning)
@@ -124,6 +126,8 @@ The script `train_cluster_classifier.py` trains a **supervised machine learning 
 The winning model is saved as:  
 
 /models/best_cluster_classifier.pkl
+
+![Confusion Matrix](/images/markdown/confusion_matrix.png)
 
 ---
 ## 4. Backend API Server
